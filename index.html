@@ -1,77 +1,103 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="ko">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>국가전략기술 관리체계 인터랙티브 맵</title>
-  <link rel="stylesheet" href="./styles.css" />
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>국가전략기술 관리체계 현황맵</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Pretendard:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css" />
 </head>
 <body>
-  <header class="hero">
-    <div class="hero-inner">
-      <div>
-        <p class="eyebrow">Interactive Website Prototype</p>
-        <h1>국가전략기술 관리체계 인터랙티브 맵</h1>
-        <p class="subtitle">업로드한 PPT 내용을 바탕으로 기술 검색과 법령 포함 여부를 빠르게 확인할 수 있도록 만든 정적 웹사이트입니다.</p>
-      </div>
-      <div class="hero-stats">
-        <div class="stat"><strong id="statFields">-</strong><span>분야</span></div>
-        <div class="stat"><strong id="statItems">-</strong><span>기술 항목</span></div>
-        <div class="stat"><strong id="statVisible">-</strong><span>검색 결과</span></div>
-      </div>
-    </div>
-  </header>
-
-  <main class="layout">
+  <div class="app-shell">
     <aside class="sidebar">
+      <div class="brand">
+        <div class="eyebrow">Interactive Map</div>
+        <h1>국가전략기술 관리체계 현황맵</h1>
+        <p id="subtitle">PPT를 웹에서 탐색하기 쉽게 바꾼 버전입니다.</p>
+      </div>
+
       <section class="panel">
         <h2>검색</h2>
-        <label class="label" for="searchInput">기술명, 분야, 세부구분</label>
-        <input id="searchInput" class="input" type="search" placeholder="예: 휴머노이드, 수소, 반도체, 위성" />
-        <div class="small">한글 키워드로 바로 검색할 수 있습니다.</div>
+        <label class="search-box">
+          <span>기술 검색</span>
+          <input id="searchInput" type="search" placeholder="예: 반도체, 양자, 수소, 로봇" />
+        </label>
       </section>
 
       <section class="panel">
-        <h2>법령 필터</h2>
+        <div class="panel-head">
+          <h2>법령 포함 여부</h2>
+          <button id="clearLawFilters" class="ghost-btn" type="button">초기화</button>
+        </div>
         <div id="lawFilters" class="chips"></div>
       </section>
 
       <section class="panel">
-        <h2>분야 필터</h2>
-        <div id="fieldFilters" class="field-list"></div>
+        <div class="panel-head">
+          <h2>분야</h2>
+          <button id="clearCategoryFilters" class="ghost-btn" type="button">전체</button>
+        </div>
+        <div id="categoryFilters" class="category-list"></div>
       </section>
 
-      <section class="panel note">
-        <h2>안내</h2>
-        <p>이 사이트는 PPT의 배치 정보를 바탕으로 법령 포함 여부를 자동 추정한 버전입니다. 최종 대외 공개 전에는 원본 PPT와 관계 법령을 한 번 더 확인해 주세요.</p>
+      <section class="panel tip-box">
+        <h2>읽는 법</h2>
+        <p>상단의 전체 요약 매트릭스는 1페이지 총괄표를 웹용으로 다시 구성한 것입니다.</p>
+        <p>매트릭스에서 분야명이나 법령명을 누르면 바로 필터가 적용됩니다.</p>
+        <p>카드를 누르면 세부 기술 목록과 포함 법령을 볼 수 있습니다.</p>
       </section>
     </aside>
 
-    <section class="content">
-      <div class="toolbar">
-        <div id="activeSummary" class="active-summary">전체 기술을 표시 중입니다.</div>
-        <button id="resetBtn" class="ghost-btn">필터 초기화</button>
-      </div>
-      <div id="results" class="cards"></div>
-      <template id="cardTemplate">
-        <article class="card">
-          <div class="card-head">
-            <div>
-              <div class="meta"><span class="field"></span><span class="dot">•</span><span class="section"></span></div>
-              <h3 class="tech"></h3>
-            </div>
-            <div class="slide-badge"></div>
-          </div>
-          <div class="law-badges"></div>
-          <details class="source-box">
-            <summary>원문 블록 보기</summary>
-            <pre class="source"></pre>
-          </details>
-        </article>
-      </template>
-    </section>
-  </main>
+    <main class="main">
+      <header class="hero">
+        <div>
+          <p class="eyebrow">Prototype</p>
+          <h2>검색 + 법령 표시 + 전체 요약 매트릭스</h2>
+          <p class="hero-copy">발표용 슬라이드를 그대로 넘기지 않고, 1페이지 총괄표와 분야별 상세 내용을 한 화면에서 탐색할 수 있게 다시 정리했습니다.</p>
+        </div>
+        <div class="stat-grid">
+          <article class="stat-card"><span>분야 수</span><strong id="categoryCount">-</strong></article>
+          <article class="stat-card"><span>기술 항목 수</span><strong id="itemCount">-</strong></article>
+          <article class="stat-card"><span>표시 결과</span><strong id="visibleCount">-</strong></article>
+        </div>
+      </header>
 
-  <script src="./app.js" defer></script>
+      <section class="matrix-panel">
+        <div class="matrix-head">
+          <div>
+            <p class="eyebrow">Overview Matrix</p>
+            <h3>전체 요약 매트릭스</h3>
+            <p>원본 PPT 1페이지의 총괄표를 웹에서 눌러볼 수 있는 표로 재구성했습니다.</p>
+          </div>
+          <div class="matrix-legend" id="matrixLegend"></div>
+        </div>
+        <div class="matrix-wrap">
+          <table class="summary-matrix">
+            <thead id="matrixHead"></thead>
+            <tbody id="matrixBody"></tbody>
+          </table>
+        </div>
+      </section>
+
+      <section class="toolbar">
+        <div id="activeFilters" class="active-filters"></div>
+        <button id="resetAll" class="primary-btn" type="button">필터 모두 초기화</button>
+      </section>
+
+      <section id="resultsMeta" class="results-meta"></section>
+      <section id="cardGrid" class="card-grid"></section>
+    </main>
+  </div>
+
+  <dialog id="detailDialog" class="detail-dialog">
+    <div class="dialog-card">
+      <button id="closeDialog" class="dialog-close" type="button" aria-label="닫기">✕</button>
+      <div id="dialogContent"></div>
+    </div>
+  </dialog>
+
+  <script src="app.js"></script>
 </body>
 </html>
