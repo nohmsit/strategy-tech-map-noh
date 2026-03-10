@@ -1,0 +1,77 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>국가전략기술 관리체계 인터랙티브 맵</title>
+  <link rel="stylesheet" href="./styles.css" />
+</head>
+<body>
+  <header class="hero">
+    <div class="hero-inner">
+      <div>
+        <p class="eyebrow">Interactive Website Prototype</p>
+        <h1>국가전략기술 관리체계 인터랙티브 맵</h1>
+        <p class="subtitle">업로드한 PPT 내용을 바탕으로 기술 검색과 법령 포함 여부를 빠르게 확인할 수 있도록 만든 정적 웹사이트입니다.</p>
+      </div>
+      <div class="hero-stats">
+        <div class="stat"><strong id="statFields">-</strong><span>분야</span></div>
+        <div class="stat"><strong id="statItems">-</strong><span>기술 항목</span></div>
+        <div class="stat"><strong id="statVisible">-</strong><span>검색 결과</span></div>
+      </div>
+    </div>
+  </header>
+
+  <main class="layout">
+    <aside class="sidebar">
+      <section class="panel">
+        <h2>검색</h2>
+        <label class="label" for="searchInput">기술명, 분야, 세부구분</label>
+        <input id="searchInput" class="input" type="search" placeholder="예: 휴머노이드, 수소, 반도체, 위성" />
+        <div class="small">한글 키워드로 바로 검색할 수 있습니다.</div>
+      </section>
+
+      <section class="panel">
+        <h2>법령 필터</h2>
+        <div id="lawFilters" class="chips"></div>
+      </section>
+
+      <section class="panel">
+        <h2>분야 필터</h2>
+        <div id="fieldFilters" class="field-list"></div>
+      </section>
+
+      <section class="panel note">
+        <h2>안내</h2>
+        <p>이 사이트는 PPT의 배치 정보를 바탕으로 법령 포함 여부를 자동 추정한 버전입니다. 최종 대외 공개 전에는 원본 PPT와 관계 법령을 한 번 더 확인해 주세요.</p>
+      </section>
+    </aside>
+
+    <section class="content">
+      <div class="toolbar">
+        <div id="activeSummary" class="active-summary">전체 기술을 표시 중입니다.</div>
+        <button id="resetBtn" class="ghost-btn">필터 초기화</button>
+      </div>
+      <div id="results" class="cards"></div>
+      <template id="cardTemplate">
+        <article class="card">
+          <div class="card-head">
+            <div>
+              <div class="meta"><span class="field"></span><span class="dot">•</span><span class="section"></span></div>
+              <h3 class="tech"></h3>
+            </div>
+            <div class="slide-badge"></div>
+          </div>
+          <div class="law-badges"></div>
+          <details class="source-box">
+            <summary>원문 블록 보기</summary>
+            <pre class="source"></pre>
+          </details>
+        </article>
+      </template>
+    </section>
+  </main>
+
+  <script src="./app.js" defer></script>
+</body>
+</html>
