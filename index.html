@@ -3,100 +3,106 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>국가전략기술 관리체계 현황맵</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Pretendard:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <title>국가 기술관리체계 인터랙티브 맵</title>
+  <meta name="description" content="국가전략기술육성법, 조세특례, 국가첨단전략산업법, 산업기술보호법 등 5개 체계를 기준으로 19개 분야 기술을 탐색하는 인터랙티브 웹사이트" />
   <link rel="stylesheet" href="styles.css" />
 </head>
 <body>
-  <div class="app-shell">
-    <aside class="sidebar">
-      <div class="brand">
-        <div class="eyebrow">Interactive Map</div>
-        <h1>국가전략기술 관리체계 현황맵</h1>
-        <p id="subtitle">PPT를 웹에서 탐색하기 쉽게 바꾼 버전입니다.</p>
+  <div class="bg-grid"></div>
+  <header class="hero shell">
+    <div class="hero__text">
+      <div class="eyebrow">INTERACTIVE POLICY MAP</div>
+      <h1>국가 기술관리체계<br />인터랙티브 웹사이트</h1>
+      <p class="hero__desc">
+        업로드한 PPT와 엑셀을 바탕으로, <strong>19개 기술분야</strong>와
+        <strong>5개 법령 체계</strong>의 포함 관계를 한눈에 탐색할 수 있도록 구성했습니다.
+        기술 검색, 법령별 포함 여부, 분야별 상세 기술 목록, 전체 요약 매트릭스를 제공합니다.
+      </p>
+      <div class="hero__stats" id="heroStats"></div>
+    </div>
+    <div class="hero__panel glass">
+      <div class="panel-title">검색 및 빠른 필터</div>
+      <label class="search-wrap">
+        <span>기술명 / 분야 / 중분류 / 비고 검색</span>
+        <input id="searchInput" type="search" placeholder="예: AI 반도체, 바이오, 양자센서, 배터리..." />
+      </label>
+
+      <div class="filters">
+        <div>
+          <div class="filter-label">법령 기준</div>
+          <div id="lawFilters" class="chip-row"></div>
+        </div>
+        <div>
+          <div class="filter-label">포함 상태</div>
+          <div id="statusFilters" class="chip-row">
+            <button class="chip chip--active" data-status-filter="all">전체</button>
+            <button class="chip" data-status-filter="exact">직접 포함</button>
+            <button class="chip" data-status-filter="related">연관/유사</button>
+          </div>
+        </div>
       </div>
 
-      <section class="panel">
-        <h2>검색</h2>
-        <label class="search-box">
-          <span>기술 검색</span>
-          <input id="searchInput" type="search" placeholder="예: 반도체, 양자, 수소, 로봇" />
-        </label>
-      </section>
-
-      <section class="panel">
-        <div class="panel-head">
-          <h2>법령 포함 여부</h2>
-          <button id="clearLawFilters" class="ghost-btn" type="button">초기화</button>
-        </div>
-        <div id="lawFilters" class="chips"></div>
-      </section>
-
-      <section class="panel">
-        <div class="panel-head">
-          <h2>분야</h2>
-          <button id="clearCategoryFilters" class="ghost-btn" type="button">전체</button>
-        </div>
-        <div id="categoryFilters" class="category-list"></div>
-      </section>
-
-      <section class="panel tip-box">
-        <h2>읽는 법</h2>
-        <p>상단의 전체 요약 매트릭스는 1페이지 총괄표를 웹용으로 다시 구성한 것입니다.</p>
-        <p>매트릭스에서 분야명이나 법령명을 누르면 바로 필터가 적용됩니다.</p>
-        <p>카드를 누르면 세부 기술 목록과 포함 법령을 볼 수 있습니다.</p>
-      </section>
-    </aside>
-
-    <main class="main">
-      <header class="hero">
-        <div>
-          <p class="eyebrow">Prototype</p>
-          <h2>검색 + 법령 표시 + 전체 요약 매트릭스</h2>
-          <p class="hero-copy">발표용 슬라이드를 그대로 넘기지 않고, 1페이지 총괄표와 분야별 상세 내용을 한 화면에서 탐색할 수 있게 다시 정리했습니다.</p>
-        </div>
-        <div class="stat-grid">
-          <article class="stat-card"><span>분야 수</span><strong id="categoryCount">-</strong></article>
-          <article class="stat-card"><span>기술 항목 수</span><strong id="itemCount">-</strong></article>
-          <article class="stat-card"><span>표시 결과</span><strong id="visibleCount">-</strong></article>
-        </div>
-      </header>
-
-      <section class="matrix-panel">
-        <div class="matrix-head">
-          <div>
-            <p class="eyebrow">Overview Matrix</p>
-            <h3>전체 요약 매트릭스</h3>
-            <p>원본 PPT 1페이지의 총괄표를 웹에서 눌러볼 수 있는 표로 재구성했습니다.</p>
-          </div>
-          <div class="matrix-legend" id="matrixLegend"></div>
-        </div>
-        <div class="matrix-wrap">
-          <table class="summary-matrix">
-            <thead id="matrixHead"></thead>
-            <tbody id="matrixBody"></tbody>
-          </table>
-        </div>
-      </section>
-
-      <section class="toolbar">
-        <div id="activeFilters" class="active-filters"></div>
-        <button id="resetAll" class="primary-btn" type="button">필터 모두 초기화</button>
-      </section>
-
-      <section id="resultsMeta" class="results-meta"></section>
-      <section id="cardGrid" class="card-grid"></section>
-    </main>
-  </div>
-
-  <dialog id="detailDialog" class="detail-dialog">
-    <div class="dialog-card">
-      <button id="closeDialog" class="dialog-close" type="button" aria-label="닫기">✕</button>
-      <div id="dialogContent"></div>
+      <div class="legend">
+        <div><span class="legend-mark legend-mark--exact"></span> 직접 포함 (●)</div>
+        <div><span class="legend-mark legend-mark--related"></span> 연관/유사 (○)</div>
+        <div><span class="legend-mark legend-mark--none"></span> 해당 없음</div>
+      </div>
     </div>
+  </header>
+
+  <main class="shell">
+    <section class="section">
+      <div class="section-head">
+        <div>
+          <div class="section-kicker">OVERVIEW</div>
+          <h2>전체 요약 매트릭스</h2>
+        </div>
+        <p class="section-note">셀을 누르면 해당 분야와 법령으로 바로 필터링됩니다.</p>
+      </div>
+      <div class="glass matrix-wrap">
+        <div id="matrix"></div>
+      </div>
+    </section>
+
+    <section class="section">
+      <div class="section-head">
+        <div>
+          <div class="section-kicker">FIELDS</div>
+          <h2>19개 분야 탐색</h2>
+        </div>
+        <p id="resultSummary" class="section-note"></p>
+      </div>
+      <div id="fieldGrid" class="field-grid"></div>
+    </section>
+  </main>
+
+  <dialog id="detailModal" class="detail-modal">
+    <div class="detail-modal__header">
+      <div>
+        <div class="section-kicker">DETAIL VIEW</div>
+        <h3 id="modalTitle">분야 상세</h3>
+        <p id="modalMeta" class="modal-meta"></p>
+      </div>
+      <button id="closeModalBtn" class="icon-btn" aria-label="닫기">✕</button>
+    </div>
+    <div id="modalLawTabs" class="law-tabs"></div>
+    <div id="modalBody" class="detail-modal__body"></div>
   </dialog>
+
+  <template id="fieldCardTemplate">
+    <article class="field-card glass">
+      <div class="field-card__top">
+        <div>
+          <div class="field-card__eyebrow">기술분야</div>
+          <h3 class="field-card__title"></h3>
+        </div>
+        <button class="field-card__btn">상세 보기</button>
+      </div>
+      <div class="field-card__stats"></div>
+      <div class="field-card__laws"></div>
+      <div class="field-card__technologies"></div>
+    </article>
+  </template>
 
   <script src="app.js"></script>
 </body>

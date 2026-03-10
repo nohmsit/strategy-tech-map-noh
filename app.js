@@ -1,271 +1,348 @@
 const state = {
-  raw: null,
-  query: "",
-  selectedLaws: new Set(),
-  selectedCategories: new Set(),
+  data: null,
+  search: "",
+  activeLaw: "all",
+  activeStatus: "all",
+  modalFieldId: null,
+  modalLaw: null
 };
 
-const els = {
-  subtitle: document.getElementById('subtitle'),
-  lawFilters: document.getElementById('lawFilters'),
-  categoryFilters: document.getElementById('categoryFilters'),
-  cardGrid: document.getElementById('cardGrid'),
-  searchInput: document.getElementById('searchInput'),
-  categoryCount: document.getElementById('categoryCount'),
-  itemCount: document.getElementById('itemCount'),
-  visibleCount: document.getElementById('visibleCount'),
-  resultsMeta: document.getElementById('resultsMeta'),
-  activeFilters: document.getElementById('activeFilters'),
-  detailDialog: document.getElementById('detailDialog'),
-  dialogContent: document.getElementById('dialogContent'),
-  matrixHead: document.getElementById('matrixHead'),
-  matrixBody: document.getElementById('matrixBody'),
-  matrixLegend: document.getElementById('matrixLegend'),
-};
+const heroStats = document.getElementById("heroStats");
+const lawFilters = document.getElementById("lawFilters");
+const fieldGrid = document.getElementById("fieldGrid");
+const matrix = document.getElementById("matrix");
+const resultSummary = document.getElementById("resultSummary");
+const searchInput = document.getElementById("searchInput");
+const statusFilters = document.getElementById("statusFilters");
+const detailModal = document.getElementById("detailModal");
+const closeModalBtn = document.getElementById("closeModalBtn");
+const modalTitle = document.getElementById("modalTitle");
+const modalMeta = document.getElementById("modalMeta");
+const modalLawTabs = document.getElementById("modalLawTabs");
+const modalBody = document.getElementById("modalBody");
+const fieldCardTemplate = document.getElementById("fieldCardTemplate");
 
-const lawNameMap = {};
-
-fetch('data.json')
+fetch("data.json")
   .then((res) => res.json())
   .then((data) => {
-    state.raw = data;
-    data.laws.forEach((law) => lawNameMap[law.id] = law.name);
-    els.subtitle.textContent = data.meta.subtitle;
-    renderFilters();
+    state.data = data;
+    renderHeroStats();
+    renderLawFilters();
     renderMatrix();
-    render();
-  })
-  .catch((error) => {
-    console.error(error);
-    els.cardGrid.innerHTML = '<div class="empty-state">데이터를 불러오지 못했습니다. data.json 파일이 같은 폴더에 있는지 확인해 주세요.</div>';
+    renderFieldGrid();
+    attachGlobalEvents();
   });
 
-function renderFilters() {
-  els.lawFilters.innerHTML = state.raw.laws.map((law) => `
-    <button class="chip ${state.selectedLaws.has(law.id) ? 'active' : ''}" data-law="${law.id}" type="button">${law.name}</button>
-  `).join('');
+function renderHeroStats() {
+  const { fields, laws, stats } = state.data;
+  const items = [
+    `19개 분야`,
+    `${stats.totalTechnologies}개 세부기술`,
+    `${laws.length}개 법령 체계`,
+    `${fields.filter((field) => field.summary.lawCoverageCount === 5).length}개 분야가 5개 체계 모두와 연결`
+  ];
+  heroStats.innerHTML = items.map((item) => `<div class="stat-pill">${item}</div>`).join("");
+}
 
-  els.categoryFilters.innerHTML = state.raw.categories.map((category) => `
-    <button class="category-btn ${state.selectedCategories.has(category.id) ? 'active' : ''}" data-category="${category.id}" type="button">
-      <span>${category.name}</span>
-      <small>${category.items.length}개</small>
-    </button>
-  `).join('');
-
-  document.querySelectorAll('[data-law]').forEach((btn) => {
-    btn.addEventListener('click', () => {
-      const key = btn.dataset.law;
-      toggleSet(state.selectedLaws, key);
-      syncRender();
-    });
-  });
-
-  document.querySelectorAll('[data-category]').forEach((btn) => {
-    btn.addEventListener('click', () => {
-      const key = btn.dataset.category;
-      toggleSet(state.selectedCategories, key);
-      syncRender();
-    });
-  });
+function renderLawFilters() {
+  const buttons = [
+    `<button class="chip chip--active" data-law-filter="all">전체 법령</button>`,
+    ...state.data.laws.map(
+      (law) =>
+        `<button class="chip" data-law-filter="${law.key}">
+          <span class="law-dot" style="background:${law.color}"></span>${law.short}
+        </button>`
+    )
+  ];
+  lawFilters.innerHTML = buttons.join("");
 }
 
 function renderMatrix() {
-  els.matrixLegend.innerHTML = `
-    <span class="matrix-legend-item"><span class="matrix-dot on"></span> 포함</span>
-    <span class="matrix-legend-item"><span class="matrix-dot off"></span> 미표시</span>
+  const { fields, laws } = state.data;
+  matrix.innerHTML = `
+    <table class="matrix-table">
+      <thead>
+        <tr>
+          <th>분야</th>
+          ${laws.map((law) => `<th>${law.short}</th>`).join("")}
+        </tr>
+      </thead>
+      <tbody>
+        ${fields
+          .map((field) => {
+            return `
+              <tr>
+                <td>
+                  <div class="matrix-field-name">${field.name}</div>
+                  <div class="section-note">${field.summary.totalTechnologies}개 세부기술</div>
+                </td>
+                ${laws
+                  .map((law) => {
+                    const bucket = field.byLaw[law.key];
+                    const total = bucket.all.length;
+                    const exact = bucket.exact.length;
+                    const related = bucket.related.length;
+                    const empty = total === 0;
+                    return `
+                      <td>
+                        <button
+                          class="matrix-cell ${empty ? "is-empty" : ""}"
+                          style="background:${empty ? "rgba(255,255,255,.03)" : toAlpha(law.color, .20)}; border-color:${toAlpha(law.color, .35)}"
+                          data-matrix-field="${field.id}"
+                          data-matrix-law="${law.key}"
+                        >
+                          <span class="matrix-cell__count">${total}개</span>
+                          <span class="matrix-cell__sub">● ${exact} / ○ ${related}</span>
+                        </button>
+                      </td>
+                    `;
+                  })
+                  .join("")}
+              </tr>
+            `;
+          })
+          .join("")}
+      </tbody>
+    </table>
   `;
-
-  els.matrixHead.innerHTML = `
-    <tr>
-      <th>분야</th>
-      ${state.raw.laws.map((law) => `
-        <th>
-          <button class="matrix-header-btn ${state.selectedLaws.has(law.id) ? 'active' : ''}" type="button" data-matrix-law="${law.id}">
-            ${law.name}
-          </button>
-        </th>
-      `).join('')}
-      <th>세부 기술</th>
-    </tr>
-  `;
-
-  const filteredIds = new Set(filterCategories().map((category) => category.id));
-
-  els.matrixBody.innerHTML = state.raw.categories.map((category) => {
-    const activeRow = filteredIds.has(category.id);
-    return `
-      <tr class="${activeRow ? 'row-active' : 'row-dim'}">
-        <th>
-          <button class="matrix-category-btn ${state.selectedCategories.has(category.id) ? 'active' : ''}" type="button" data-matrix-category="${category.id}">
-            ${category.name}
-          </button>
-        </th>
-        ${state.raw.laws.map((law) => `
-          <td>
-            <button
-              class="matrix-cell ${category.laws.includes(law.id) ? 'on' : 'off'} ${state.selectedLaws.has(law.id) ? 'selected-law' : ''}"
-              type="button"
-              data-matrix-category="${category.id}"
-              data-matrix-law-toggle="${law.id}"
-              aria-label="${category.name} - ${law.name} ${category.laws.includes(law.id) ? '포함' : '미표시'}"
-              title="${category.name} / ${law.name} / ${category.laws.includes(law.id) ? '포함' : '미표시'}"
-            >
-              <span>${category.laws.includes(law.id) ? '●' : '–'}</span>
-            </button>
-          </td>
-        `).join('')}
-        <td class="matrix-count">${category.items.length}개</td>
-      </tr>
-    `;
-  }).join('');
-
-  document.querySelectorAll('[data-matrix-law]').forEach((button) => {
-    button.addEventListener('click', () => {
-      toggleSet(state.selectedLaws, button.dataset.matrixLaw);
-      syncRender();
-    });
-  });
-
-  document.querySelectorAll('[data-matrix-category]').forEach((button) => {
-    button.addEventListener('click', () => {
-      toggleSet(state.selectedCategories, button.dataset.matrixCategory);
-      syncRender();
-    });
-  });
-
-  document.querySelectorAll('[data-matrix-law-toggle]').forEach((button) => {
-    button.addEventListener('click', () => {
-      const { matrixCategory, matrixLawToggle } = button.dataset;
-      toggleSet(state.selectedCategories, matrixCategory);
-      if (button.classList.contains('on')) {
-        toggleSet(state.selectedLaws, matrixLawToggle);
-      }
-      syncRender();
-    });
-  });
 }
 
-function toggleSet(targetSet, value) {
-  if (targetSet.has(value)) targetSet.delete(value);
-  else targetSet.add(value);
-}
-
-function filterCategories() {
-  const q = state.query.trim().toLowerCase();
-  return state.raw.categories.filter((category) => {
-    const matchCategory = state.selectedCategories.size === 0 || state.selectedCategories.has(category.id);
-    const matchLaw = state.selectedLaws.size === 0 || [...state.selectedLaws].every((law) => category.laws.includes(law));
-    const aliases = (category.aliases || []).join(' ');
-    const haystack = `${category.name} ${aliases} ${category.summary} ${category.items.join(' ')}`.toLowerCase();
-    const matchQuery = !q || haystack.includes(q);
-    return matchCategory && matchLaw && matchQuery;
-  });
-}
-
-function render() {
-  const filtered = filterCategories();
-  const totalItems = state.raw.categories.reduce((sum, category) => sum + category.items.length, 0);
-  const visibleItems = filtered.reduce((sum, category) => sum + category.items.length, 0);
-
-  els.categoryCount.textContent = state.raw.categories.length.toLocaleString('ko-KR');
-  els.itemCount.textContent = totalItems.toLocaleString('ko-KR');
-  els.visibleCount.textContent = visibleItems.toLocaleString('ko-KR');
-  els.resultsMeta.textContent = `현재 ${filtered.length}개 분야 / ${visibleItems}개 기술 항목이 표시되고 있습니다.`;
-
-  const active = [];
-  if (state.query) active.push(`<span class="filter-pill">검색어: ${escapeHtml(state.query)}</span>`);
-  [...state.selectedLaws].forEach((law) => active.push(`<span class="filter-pill">법령: ${lawNameMap[law]}</span>`));
-  [...state.selectedCategories].forEach((id) => {
-    const found = state.raw.categories.find((category) => category.id === id);
-    if (found) active.push(`<span class="filter-pill">분야: ${found.name}</span>`);
-  });
-  els.activeFilters.innerHTML = active.length ? active.join('') : '<span class="filter-pill">현재 전체 보기 상태입니다.</span>';
+function renderFieldGrid() {
+  const filtered = getFilteredFields();
+  resultSummary.textContent = `${filtered.length}개 분야가 현재 조건에 맞습니다.`;
 
   if (!filtered.length) {
-    els.cardGrid.innerHTML = '<div class="empty-state">조건에 맞는 결과가 없습니다. 검색어를 바꾸거나 필터를 해제해 보세요.</div>';
+    fieldGrid.innerHTML = `<div class="empty-state">조건에 맞는 분야가 없습니다. 검색어를 지우거나 법령 필터를 바꿔보세요.</div>`;
     return;
   }
 
-  els.cardGrid.innerHTML = filtered.map((category) => `
-    <article class="card">
-      <div>
-        <h3>${category.name}</h3>
-        <p>${category.summary}</p>
-      </div>
-      <div class="badges">
-        ${state.raw.laws.map((law) => `<span class="law-pill ${category.laws.includes(law.id) ? 'yes' : ''}">${law.name} ${category.laws.includes(law.id) ? '포함' : '미표시'}</span>`).join('')}
-      </div>
-      <footer>
-        <span class="count">세부 기술 ${category.items.length}개</span>
-        <button class="primary-btn" type="button" data-open="${category.id}">상세 보기</button>
-      </footer>
-    </article>
-  `).join('');
+  const frag = document.createDocumentFragment();
 
-  document.querySelectorAll('[data-open]').forEach((button) => {
-    button.addEventListener('click', () => openDetail(button.dataset.open));
+  filtered.forEach((field) => {
+    const node = fieldCardTemplate.content.firstElementChild.cloneNode(true);
+    node.querySelector(".field-card__title").textContent = field.name;
+
+    node.querySelector(".field-card__stats").innerHTML = `
+      <div class="mini-stat"><strong>${field.summary.totalTechnologies}</strong><span>전체 세부기술</span></div>
+      <div class="mini-stat"><strong>${field.summary.lawCoverageCount}/5</strong><span>적용 법령 수</span></div>
+      <div class="mini-stat"><strong>${field.summary.exactCountTotal}</strong><span>직접 포함 수</span></div>
+      <div class="mini-stat"><strong>${field.summary.relatedCountTotal}</strong><span>연관/유사 수</span></div>
+    `;
+
+    node.querySelector(".field-card__laws").innerHTML = state.data.laws
+      .map((law) => {
+        const bucket = field.byLaw[law.key];
+        return `
+          <div class="law-strip">
+            <div class="law-strip__meta">
+              <span class="law-dot" style="background:${law.color}"></span>
+              <div class="law-name">${law.short}</div>
+            </div>
+            <div class="law-counts">총 ${bucket.all.length}개 · ● ${bucket.exact.length} / ○ ${bucket.related.length}</div>
+          </div>
+        `;
+      })
+      .join("");
+
+    const matchingRecords = getMatchingRecords(field).slice(0, 6);
+    node.querySelector(".field-card__technologies").innerHTML = matchingRecords.length
+      ? matchingRecords.map((record) => `<span class="tech-tag">${highlight(record.technology, state.search)}</span>`).join("")
+      : field.records.slice(0, 6).map((record) => `<span class="tech-tag">${record.technology}</span>`).join("");
+
+    node.querySelector(".field-card__btn").addEventListener("click", () => openFieldModal(field.id));
+    node.addEventListener("dblclick", () => openFieldModal(field.id));
+
+    frag.appendChild(node);
+  });
+
+  fieldGrid.innerHTML = "";
+  fieldGrid.appendChild(frag);
+}
+
+function attachGlobalEvents() {
+  searchInput.addEventListener("input", (e) => {
+    state.search = e.target.value.trim();
+    renderFieldGrid();
+  });
+
+  lawFilters.addEventListener("click", (e) => {
+    const button = e.target.closest("[data-law-filter]");
+    if (!button) return;
+    state.activeLaw = button.dataset.lawFilter;
+    [...lawFilters.querySelectorAll(".chip")].forEach((chip) => chip.classList.remove("chip--active"));
+    button.classList.add("chip--active");
+    renderFieldGrid();
+  });
+
+  statusFilters.addEventListener("click", (e) => {
+    const button = e.target.closest("[data-status-filter]");
+    if (!button) return;
+    state.activeStatus = button.dataset.statusFilter;
+    [...statusFilters.querySelectorAll(".chip")].forEach((chip) => chip.classList.remove("chip--active"));
+    button.classList.add("chip--active");
+    renderFieldGrid();
+  });
+
+  matrix.addEventListener("click", (e) => {
+    const cell = e.target.closest("[data-matrix-field]");
+    if (!cell) return;
+    const fieldId = cell.dataset.matrixField;
+    const lawKey = cell.dataset.matrixLaw;
+    state.activeLaw = lawKey;
+    [...lawFilters.querySelectorAll(".chip")].forEach((chip) => {
+      chip.classList.toggle("chip--active", chip.dataset.lawFilter === lawKey);
+    });
+    renderFieldGrid();
+    openFieldModal(fieldId, lawKey);
+  });
+
+  closeModalBtn.addEventListener("click", () => detailModal.close());
+  detailModal.addEventListener("click", (e) => {
+    const rect = detailModal.getBoundingClientRect();
+    const inside = rect.top <= e.clientY && e.clientY <= rect.top + rect.height && rect.left <= e.clientX && e.clientX <= rect.left + rect.width;
+    if (!inside) detailModal.close();
+  });
+
+  modalLawTabs.addEventListener("click", (e) => {
+    const button = e.target.closest("[data-modal-law]");
+    if (!button) return;
+    state.modalLaw = button.dataset.modalLaw;
+    renderModalBody();
   });
 }
 
-function openDetail(categoryId) {
-  const category = state.raw.categories.find((item) => item.id === categoryId);
-  if (!category) return;
-  els.dialogContent.innerHTML = `
-    <div class="detail-top">
-      <p class="eyebrow">Detail View</p>
-      <h3>${category.name}</h3>
-      <p>${category.summary}</p>
-      <div class="badges">
-        ${state.raw.laws.map((law) => `<span class="law-pill ${category.laws.includes(law.id) ? 'yes' : ''}">${law.name} ${category.laws.includes(law.id) ? '포함' : '미표시'}</span>`).join('')}
-      </div>
-      <div class="notice">법령 포함 여부는 PPT 내 표기와 구조를 기준으로 정리한 웹 프로토타입입니다. 실제 행정·법률 판단에는 원문 법령과 고시를 반드시 확인해 주세요.</div>
+function getFilteredFields() {
+  return state.data.fields.filter((field) => {
+    const matchesRecords = getMatchingRecords(field);
+    const lawMatch = matchesLawFilter(field);
+    return lawMatch && (state.search ? matchesRecords.length > 0 : true);
+  });
+}
+
+function getMatchingRecords(field) {
+  const q = normalize(state.search);
+  return field.records.filter((record) => {
+    const hay = normalize([field.name, record.subcategory, record.technology, record.note].join(" "));
+    const textMatch = q ? hay.includes(q) : true;
+    const lawStatusMatch = matchesLawStatusFilter(record);
+    return textMatch && lawStatusMatch;
+  });
+}
+
+function matchesLawFilter(field) {
+  if (state.activeLaw === "all") {
+    if (state.activeStatus === "all") return true;
+    return field.records.some((record) => Object.values(record.statuses).includes(state.activeStatus));
+  }
+  return field.records.some((record) => matchesLawStatusFilter(record));
+}
+
+function matchesLawStatusFilter(record) {
+  if (state.activeLaw === "all" && state.activeStatus === "all") return true;
+
+  if (state.activeLaw !== "all") {
+    const status = record.statuses[state.activeLaw];
+    if (state.activeStatus === "all") return status !== "none";
+    return status === state.activeStatus;
+  }
+
+  if (state.activeStatus !== "all") {
+    return Object.values(record.statuses).includes(state.activeStatus);
+  }
+
+  return true;
+}
+
+function openFieldModal(fieldId, preferredLaw = null) {
+  state.modalFieldId = fieldId;
+  state.modalLaw = preferredLaw || (state.activeLaw !== "all" ? state.activeLaw : state.data.laws[0].key);
+
+  const field = state.data.fields.find((item) => item.id === fieldId);
+  modalTitle.textContent = field.name;
+  modalMeta.textContent = `전체 ${field.summary.totalTechnologies}개 세부기술 · 적용 법령 ${field.summary.lawCoverageCount}/5`;
+  renderModalTabs();
+  renderModalBody();
+  detailModal.showModal();
+}
+
+function renderModalTabs() {
+  modalLawTabs.innerHTML = state.data.laws
+    .map((law) => {
+      const bucket = currentField().byLaw[law.key];
+      return `
+        <button class="law-tab ${state.modalLaw === law.key ? "law-tab--active" : ""}" data-modal-law="${law.key}" style="border-color:${toAlpha(law.color,.35)}">
+          <span class="law-dot" style="background:${law.color}"></span>
+          ${law.short} (${bucket.all.length})
+        </button>
+      `;
+    })
+    .join("");
+}
+
+function renderModalBody() {
+  const field = currentField();
+  const law = state.data.laws.find((item) => item.key === state.modalLaw);
+  const bucket = field.byLaw[law.key];
+  const exactItems = bucket.exact.map((id) => state.data.recordLookup[id]);
+  const relatedItems = bucket.related.map((id) => state.data.recordLookup[id]);
+
+  modalBody.innerHTML = `
+    <div class="detail-columns">
+      <section class="detail-panel" style="border-color:${toAlpha(law.color,.28)}">
+        <h4><span class="law-dot" style="background:${law.color}"></span> 직접 포함 (●)</h4>
+        ${exactItems.length ? `<div class="detail-list">${exactItems.map(renderDetailItem).join("")}</div>` : `<div class="empty-state">직접 포함된 세부기술이 없습니다.</div>`}
+      </section>
+      <section class="detail-panel" style="border-color:${toAlpha(law.color,.18)}">
+        <h4><span class="law-dot" style="background:${law.color}; opacity:.75"></span> 연관/유사 (○)</h4>
+        ${relatedItems.length ? `<div class="detail-list">${relatedItems.map(renderDetailItem).join("")}</div>` : `<div class="empty-state">연관/유사로 표시된 세부기술이 없습니다.</div>`}
+      </section>
     </div>
-    <h4>세부 기술 목록</h4>
-    <ul class="detail-list">
-      ${category.items.map((item) => `<li>${item}</li>`).join('')}
-    </ul>
   `;
-  els.detailDialog.showModal();
+}
+
+function renderDetailItem(item) {
+  return `
+    <article class="detail-item">
+      <div class="detail-item__title">${highlight(item.technology, state.search)}</div>
+      <div class="detail-item__sub">${item.subcategory || "중분류 없음"}</div>
+      ${item.note ? `<div class="detail-item__note">${highlight(item.note, state.search)}</div>` : ""}
+    </article>
+  `;
+}
+
+function currentField() {
+  return state.data.fields.find((item) => item.id === state.modalFieldId);
+}
+
+function normalize(value) {
+  return (value || "").toString().toLowerCase().replace(/\s+/g, " ").trim();
+}
+
+function highlight(text, query) {
+  if (!query) return escapeHtml(text);
+  const safe = escapeRegExp(query.trim());
+  if (!safe) return escapeHtml(text);
+  return escapeHtml(text).replace(new RegExp(`(${safe})`, "gi"), "<mark>$1</mark>");
+}
+
+function toAlpha(hex, alpha) {
+  const value = hex.replace("#", "");
+  const bigint = parseInt(value, 16);
+  const r = (bigint >> 16) & 255;
+  const g = (bigint >> 8) & 255;
+  const b = bigint & 255;
+  return `rgba(${r}, ${g}, ${b}, ${alpha})`;
 }
 
 function escapeHtml(value) {
-  return value
-    .replaceAll('&', '&amp;')
-    .replaceAll('<', '&lt;')
-    .replaceAll('>', '&gt;')
-    .replaceAll('"', '&quot;')
-    .replaceAll("'", '&#39;');
+  return String(value)
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;")
+    .replaceAll("'", "&#039;");
 }
 
-function syncRender() {
-  renderFilters();
-  renderMatrix();
-  render();
-}
-
-els.searchInput.addEventListener('input', (event) => {
-  state.query = event.target.value;
-  renderMatrix();
-  render();
-});
-
-document.getElementById('resetAll').addEventListener('click', resetAll);
-document.getElementById('clearLawFilters').addEventListener('click', () => {
-  state.selectedLaws.clear(); syncRender();
-});
-document.getElementById('clearCategoryFilters').addEventListener('click', () => {
-  state.selectedCategories.clear(); syncRender();
-});
-document.getElementById('closeDialog').addEventListener('click', () => els.detailDialog.close());
-els.detailDialog.addEventListener('click', (event) => {
-  const card = event.target.closest('.dialog-card');
-  if (!card) els.detailDialog.close();
-});
-
-function resetAll() {
-  state.query = '';
-  state.selectedLaws.clear();
-  state.selectedCategories.clear();
-  els.searchInput.value = '';
-  syncRender();
+function escapeRegExp(string) {
+  return string.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 }
