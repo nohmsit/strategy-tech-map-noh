@@ -36,7 +36,7 @@ fetch("data.json")
 function renderHeroStats() {
   const { fields, laws, stats } = state.data;
   const items = [
-    `19개 분야`,
+    `${fields.length}개 분야`,
     `${stats.totalTechnologies}개 세부기술`,
     `${laws.length}개 법령 체계`,
     `${fields.filter((field) => field.summary.lawCoverageCount === 5).length}개 분야가 5개 체계 모두와 연결`
@@ -46,10 +46,10 @@ function renderHeroStats() {
 
 function renderLawFilters() {
   const buttons = [
-    `<button class="chip chip--active" data-law-filter="all">전체 법령</button>`,
+    `<button class="chip ${state.activeLaw === "all" ? "chip--active" : ""}" data-law-filter="all">전체 법령</button>`,
     ...state.data.laws.map(
       (law) =>
-        `<button class="chip" data-law-filter="${law.key}">
+        `<button class="chip ${state.activeLaw === law.key ? "chip--active" : ""}" data-law-filter="${law.key}" type="button">
           <span class="law-dot" style="background:${law.color}"></span>${law.short}
         </button>`
     )
@@ -74,7 +74,7 @@ function renderMatrix() {
               <tr>
                 <td>
                   <div class="matrix-field-name">${field.name}</div>
-                  <div class="section-note">${field.summary.totalTechnologies}개 세부기술</div>
+                  <div class="section-note">PPT ${field.pptSlides.join(", ")} · ${field.summary.totalTechnologies}개 세부기술</div>
                 </td>
                 ${laws
                   .map((law) => {
@@ -121,6 +121,7 @@ function renderFieldGrid() {
   filtered.forEach((field) => {
     const node = fieldCardTemplate.content.firstElementChild.cloneNode(true);
     node.querySelector(".field-card__title").textContent = field.name;
+    node.querySelector(".field-card__slides").textContent = `PPT Slide ${field.pptSlides.join(", ")}`;
 
     node.querySelector(".field-card__stats").innerHTML = `
       <div class="mini-stat"><strong>${field.summary.totalTechnologies}</strong><span>전체 세부기술</span></div>
@@ -150,8 +151,6 @@ function renderFieldGrid() {
       : field.records.slice(0, 6).map((record) => `<span class="tech-tag">${record.technology}</span>`).join("");
 
     node.querySelector(".field-card__btn").addEventListener("click", () => openFieldModal(field.id));
-    node.addEventListener("dblclick", () => openFieldModal(field.id));
-
     frag.appendChild(node);
   });
 
@@ -169,8 +168,7 @@ function attachGlobalEvents() {
     const button = e.target.closest("[data-law-filter]");
     if (!button) return;
     state.activeLaw = button.dataset.lawFilter;
-    [...lawFilters.querySelectorAll(".chip")].forEach((chip) => chip.classList.remove("chip--active"));
-    button.classList.add("chip--active");
+    renderLawFilters();
     renderFieldGrid();
   });
 
@@ -189,18 +187,15 @@ function attachGlobalEvents() {
     const fieldId = cell.dataset.matrixField;
     const lawKey = cell.dataset.matrixLaw;
     state.activeLaw = lawKey;
-    [...lawFilters.querySelectorAll(".chip")].forEach((chip) => {
-      chip.classList.toggle("chip--active", chip.dataset.lawFilter === lawKey);
-    });
+    renderLawFilters();
     renderFieldGrid();
     openFieldModal(fieldId, lawKey);
   });
 
   closeModalBtn.addEventListener("click", () => detailModal.close());
-  detailModal.addEventListener("click", (e) => {
-    const rect = detailModal.getBoundingClientRect();
-    const inside = rect.top <= e.clientY && e.clientY <= rect.top + rect.height && rect.left <= e.clientX && e.clientX <= rect.left + rect.width;
-    if (!inside) detailModal.close();
+  detailModal.addEventListener("click", (event) => {
+    const card = event.target.closest(".detail-modal__header, .detail-modal__body, .law-tabs");
+    if (!card) detailModal.close();
   });
 
   modalLawTabs.addEventListener("click", (e) => {
@@ -239,17 +234,14 @@ function matchesLawFilter(field) {
 
 function matchesLawStatusFilter(record) {
   if (state.activeLaw === "all" && state.activeStatus === "all") return true;
-
   if (state.activeLaw !== "all") {
     const status = record.statuses[state.activeLaw];
     if (state.activeStatus === "all") return status !== "none";
     return status === state.activeStatus;
   }
-
   if (state.activeStatus !== "all") {
     return Object.values(record.statuses).includes(state.activeStatus);
   }
-
   return true;
 }
 
@@ -259,7 +251,7 @@ function openFieldModal(fieldId, preferredLaw = null) {
 
   const field = state.data.fields.find((item) => item.id === fieldId);
   modalTitle.textContent = field.name;
-  modalMeta.textContent = `전체 ${field.summary.totalTechnologies}개 세부기술 · 적용 법령 ${field.summary.lawCoverageCount}/5`;
+  modalMeta.textContent = `PPT Slide ${field.pptSlides.join(", ")} · 전체 ${field.summary.totalTechnologies}개 세부기술 · 적용 법령 ${field.summary.lawCoverageCount}/5`;
   renderModalTabs();
   renderModalBody();
   detailModal.showModal();
@@ -270,7 +262,7 @@ function renderModalTabs() {
     .map((law) => {
       const bucket = currentField().byLaw[law.key];
       return `
-        <button class="law-tab ${state.modalLaw === law.key ? "law-tab--active" : ""}" data-modal-law="${law.key}" style="border-color:${toAlpha(law.color,.35)}">
+        <button class="law-tab ${state.modalLaw === law.key ? "law-tab--active" : ""}" data-modal-law="${law.key}" type="button" style="border-color:${toAlpha(law.color, .35)}">
           <span class="law-dot" style="background:${law.color}"></span>
           ${law.short} (${bucket.all.length})
         </button>
@@ -288,11 +280,11 @@ function renderModalBody() {
 
   modalBody.innerHTML = `
     <div class="detail-columns">
-      <section class="detail-panel" style="border-color:${toAlpha(law.color,.28)}">
+      <section class="detail-panel" style="border-color:${toAlpha(law.color, .28)}">
         <h4><span class="law-dot" style="background:${law.color}"></span> 직접 포함 (●)</h4>
         ${exactItems.length ? `<div class="detail-list">${exactItems.map(renderDetailItem).join("")}</div>` : `<div class="empty-state">직접 포함된 세부기술이 없습니다.</div>`}
       </section>
-      <section class="detail-panel" style="border-color:${toAlpha(law.color,.18)}">
+      <section class="detail-panel" style="border-color:${toAlpha(law.color, .18)}">
         <h4><span class="law-dot" style="background:${law.color}; opacity:.75"></span> 연관/유사 (○)</h4>
         ${relatedItems.length ? `<div class="detail-list">${relatedItems.map(renderDetailItem).join("")}</div>` : `<div class="empty-state">연관/유사로 표시된 세부기술이 없습니다.</div>`}
       </section>
@@ -304,7 +296,7 @@ function renderDetailItem(item) {
   return `
     <article class="detail-item">
       <div class="detail-item__title">${highlight(item.technology, state.search)}</div>
-      <div class="detail-item__sub">${item.subcategory || "중분류 없음"}</div>
+      <div class="detail-item__sub">${item.subcategory || "중분류 없음"} · PPT ${item.pptSlides.join(", ")}</div>
       ${item.note ? `<div class="detail-item__note">${highlight(item.note, state.search)}</div>` : ""}
     </article>
   `;
@@ -340,9 +332,9 @@ function escapeHtml(value) {
     .replaceAll("<", "&lt;")
     .replaceAll(">", "&gt;")
     .replaceAll('"', "&quot;")
-    .replaceAll("'", "&#039;");
+    .replaceAll("'", "&#39;");
 }
 
 function escapeRegExp(string) {
-  return string.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  return string.replace(/[.*+?^${}()|[\]\\]/g, "\$&");
 }

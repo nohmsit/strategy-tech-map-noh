@@ -3,28 +3,27 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>국가 기술관리체계 인터랙티브 맵</title>
-  <meta name="description" content="국가전략기술육성법, 조세특례, 국가첨단전략산업법, 산업기술보호법 등 5개 체계를 기준으로 19개 분야 기술을 탐색하는 인터랙티브 웹사이트" />
+  <title>Strategic Technology Map</title>
+  <meta name="description" content="국가 기술관리체계 19개 분야와 5개 법령 체계를 탐색하는 인터랙티브 웹사이트" />
   <link rel="stylesheet" href="styles.css" />
 </head>
 <body>
   <div class="bg-grid"></div>
   <header class="hero shell">
     <div class="hero__text">
-      <div class="eyebrow">INTERACTIVE POLICY MAP</div>
+      <div class="eyebrow">INTERACTIVE STRATEGIC TECHNOLOGY MAP</div>
       <h1>국가 기술관리체계<br />인터랙티브 웹사이트</h1>
       <p class="hero__desc">
-        업로드한 PPT와 엑셀을 바탕으로, <strong>19개 기술분야</strong>와
-        <strong>5개 법령 체계</strong>의 포함 관계를 한눈에 탐색할 수 있도록 구성했습니다.
-        기술 검색, 법령별 포함 여부, 분야별 상세 기술 목록, 전체 요약 매트릭스를 제공합니다.
+        <strong>PPT를 우선 기준</strong>으로 19개 분야와 5개 법령 체계를 정리했습니다.
+        기술 검색, 분야별 상세 보기, 법령 포함 여부, 전체 요약 매트릭스를 한 화면에서 탐색할 수 있습니다.
       </p>
       <div class="hero__stats" id="heroStats"></div>
     </div>
     <div class="hero__panel glass">
-      <div class="panel-title">검색 및 빠른 필터</div>
+      <div class="panel-title">검색 및 필터</div>
       <label class="search-wrap">
-        <span>기술명 / 분야 / 중분류 / 비고 검색</span>
-        <input id="searchInput" type="search" placeholder="예: AI 반도체, 바이오, 양자센서, 배터리..." />
+        <span>기술명 · 분야 · 중분류 · 비고 검색</span>
+        <input id="searchInput" type="search" placeholder="예: DRAM, 자율주행, 수전해, 백신, 위성" />
       </label>
 
       <div class="filters">
@@ -36,8 +35,8 @@
           <div class="filter-label">포함 상태</div>
           <div id="statusFilters" class="chip-row">
             <button class="chip chip--active" data-status-filter="all">전체</button>
-            <button class="chip" data-status-filter="exact">직접 포함</button>
-            <button class="chip" data-status-filter="related">연관/유사</button>
+            <button class="chip" data-status-filter="exact">직접 포함 (●)</button>
+            <button class="chip" data-status-filter="related">연관/유사 (○)</button>
           </div>
         </div>
       </div>
@@ -95,6 +94,7 @@
         <div>
           <div class="field-card__eyebrow">기술분야</div>
           <h3 class="field-card__title"></h3>
+          <div class="field-card__slides"></div>
         </div>
         <button class="field-card__btn">상세 보기</button>
       </div>
