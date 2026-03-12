@@ -3,107 +3,1664 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Strategic Technology Map</title>
-  <meta name="description" content="국가 기술관리체계 19개 분야와 5개 법령 체계를 탐색하는 인터랙티브 웹사이트" />
-  <link rel="stylesheet" href="styles.css" />
+  <title>국가전략기술 3D 현황맵</title>
+  <meta name="description" content="12대 국가전략기술 예산과 기술수준을 면적과 높이로 표현한 3D 인터랙티브 맵" />
+  <style>
+    :root{
+      --bg:#08111f;
+      --bg2:#0d1728;
+      --panel:#0f1c30;
+      --panel2:#12213a;
+      --line:#223652;
+      --line2:#304566;
+      --text:#ecf3ff;
+      --muted:#93a7c4;
+      --muted2:#6f86a8;
+      --accent:#7dd3fc;
+      --accent2:#c084fc;
+      --good:#86efac;
+      --warn:#fcd34d;
+      --shadow:0 20px 60px rgba(0,0,0,.28);
+      --radius:20px;
+    }
+
+    *{box-sizing:border-box}
+    html,body{margin:0;padding:0}
+    body{
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Apple SD Gothic Neo", "Malgun Gothic", "Noto Sans KR", sans-serif;
+      color:var(--text);
+      background:
+        radial-gradient(circle at 20% 0%, rgba(125,211,252,.10), transparent 28%),
+        radial-gradient(circle at 100% 0%, rgba(192,132,252,.10), transparent 25%),
+        linear-gradient(180deg,#08111f 0%, #091426 100%);
+      min-height:100vh;
+    }
+
+    .page{
+      width:min(1600px, calc(100vw - 28px));
+      margin:18px auto 28px;
+      display:flex;
+      flex-direction:column;
+      gap:16px;
+    }
+
+    .topbar{
+      display:grid;
+      grid-template-columns:minmax(0,1fr) auto;
+      gap:18px;
+      align-items:start;
+      background:linear-gradient(180deg, rgba(19,32,54,.88), rgba(13,24,42,.92));
+      border:1px solid rgba(255,255,255,.07);
+      border-radius:24px;
+      padding:24px 26px;
+      box-shadow:var(--shadow);
+      backdrop-filter: blur(12px);
+    }
+
+    .eyebrow{
+      display:inline-flex;
+      align-items:center;
+      gap:8px;
+      font-size:12px;
+      font-weight:700;
+      letter-spacing:.08em;
+      color:var(--accent);
+      text-transform:uppercase;
+      margin-bottom:10px;
+    }
+
+    .eyebrow::before{
+      content:"";
+      width:10px;
+      height:10px;
+      border-radius:999px;
+      background:linear-gradient(135deg, var(--accent), var(--accent2));
+      box-shadow:0 0 0 4px rgba(125,211,252,.12);
+    }
+
+    h1{
+      margin:0;
+      font-size:clamp(28px, 3vw, 42px);
+      line-height:1.12;
+      letter-spacing:-.03em;
+    }
+
+    .subtitle{
+      margin:10px 0 0;
+      color:var(--muted);
+      line-height:1.6;
+      font-size:15px;
+      max-width:880px;
+    }
+
+    .headline-notes{
+      display:flex;
+      gap:10px;
+      flex-wrap:wrap;
+      margin-top:14px;
+    }
+
+    .note-pill{
+      display:inline-flex;
+      align-items:center;
+      gap:8px;
+      padding:9px 12px;
+      border-radius:999px;
+      border:1px solid rgba(255,255,255,.08);
+      background:rgba(255,255,255,.04);
+      color:var(--muted);
+      font-size:12px;
+      font-weight:600;
+    }
+
+    .kpi-grid{
+      display:grid;
+      grid-template-columns:repeat(4, minmax(130px, 1fr));
+      gap:10px;
+      min-width:min(100%, 620px);
+    }
+
+    .kpi{
+      background:linear-gradient(180deg, rgba(255,255,255,.06), rgba(255,255,255,.03));
+      border:1px solid rgba(255,255,255,.08);
+      border-radius:18px;
+      padding:14px 16px;
+      min-height:88px;
+    }
+
+    .kpi-label{
+      font-size:11px;
+      color:var(--muted2);
+      font-weight:700;
+      letter-spacing:.06em;
+      text-transform:uppercase;
+      margin-bottom:8px;
+    }
+
+    .kpi-value{
+      font-size:26px;
+      font-weight:800;
+      letter-spacing:-.03em;
+      white-space:nowrap;
+    }
+
+    .kpi-sub{
+      font-size:12px;
+      color:var(--muted);
+      margin-top:6px;
+    }
+
+    .legend-strip{
+      display:flex;
+      flex-wrap:wrap;
+      gap:10px;
+      align-items:center;
+      background:rgba(15,27,46,.7);
+      border:1px solid rgba(255,255,255,.06);
+      border-radius:20px;
+      padding:14px 16px;
+    }
+
+    .legend-title{
+      color:var(--muted2);
+      font-size:12px;
+      font-weight:700;
+      letter-spacing:.06em;
+      text-transform:uppercase;
+      margin-right:2px;
+    }
+
+    .legend-item{
+      display:inline-flex;
+      align-items:center;
+      gap:8px;
+      padding:8px 11px;
+      border-radius:999px;
+      background:rgba(255,255,255,.03);
+      border:1px solid rgba(255,255,255,.06);
+      color:var(--muted);
+      font-size:12px;
+      font-weight:600;
+    }
+
+    .legend-swatch{
+      width:12px;
+      height:12px;
+      border-radius:4px;
+      border:1px solid rgba(8,17,31,.15);
+      flex:0 0 auto;
+    }
+
+    .layout{
+      display:grid;
+      grid-template-columns:minmax(0, 1.32fr) minmax(360px, 440px);
+      gap:16px;
+      align-items:start;
+    }
+
+    .panel{
+      background:linear-gradient(180deg, rgba(15,27,46,.92), rgba(12,23,39,.96));
+      border:1px solid rgba(255,255,255,.07);
+      border-radius:24px;
+      box-shadow:var(--shadow);
+      overflow:hidden;
+      min-width:0;
+    }
+
+    .panel-head{
+      display:flex;
+      justify-content:space-between;
+      align-items:flex-end;
+      gap:12px;
+      padding:18px 20px 14px;
+      border-bottom:1px solid rgba(255,255,255,.06);
+    }
+
+    .panel-title{
+      font-size:19px;
+      font-weight:800;
+      letter-spacing:-.02em;
+    }
+
+    .panel-sub{
+      font-size:12px;
+      color:var(--muted2);
+      margin-top:4px;
+    }
+
+    .map-wrap{
+      position:relative;
+      padding:16px;
+      background:
+        radial-gradient(circle at 50% 20%, rgba(255,255,255,.03), transparent 30%),
+        linear-gradient(180deg, rgba(255,255,255,.02), rgba(255,255,255,.01));
+    }
+
+    .map-frame{
+      position:relative;
+      width:100%;
+      aspect-ratio: 16 / 10;
+      border-radius:22px;
+      overflow:hidden;
+      border:1px solid rgba(255,255,255,.06);
+      background:
+        radial-gradient(circle at 50% 0%, rgba(125,211,252,.08), transparent 36%),
+        linear-gradient(180deg, #0b1525 0%, #09111d 100%);
+    }
+
+    #treemap3d{
+      width:100%;
+      height:100%;
+      display:block;
+    }
+
+    .tooltip{
+      position:absolute;
+      z-index:5;
+      min-width:190px;
+      max-width:260px;
+      padding:12px 13px;
+      border-radius:16px;
+      background:rgba(8,17,31,.94);
+      border:1px solid rgba(255,255,255,.1);
+      box-shadow:0 18px 40px rgba(0,0,0,.36);
+      pointer-events:none;
+      transform:translate(12px, 12px);
+      opacity:0;
+      transition:opacity .14s ease;
+      color:var(--text);
+      backdrop-filter: blur(10px);
+    }
+
+    .tooltip.visible{opacity:1}
+    .tooltip h4{
+      margin:0 0 8px;
+      font-size:14px;
+      font-weight:800;
+    }
+    .tooltip p{
+      margin:4px 0;
+      font-size:12px;
+      color:var(--muted);
+      line-height:1.45;
+    }
+
+    .map-footer{
+      display:flex;
+      justify-content:space-between;
+      align-items:flex-start;
+      gap:14px;
+      padding:0 20px 18px;
+      color:var(--muted);
+      font-size:12px;
+      line-height:1.5;
+    }
+
+    .map-note{
+      max-width:560px;
+    }
+
+    .sector-chip-grid{
+      display:grid;
+      grid-template-columns:repeat(4, minmax(0,1fr));
+      gap:10px;
+      width:min(100%, 520px);
+    }
+
+    .sector-chip{
+      display:flex;
+      align-items:center;
+      gap:10px;
+      width:100%;
+      padding:10px 12px;
+      border-radius:16px;
+      background:rgba(255,255,255,.03);
+      border:1px solid rgba(255,255,255,.06);
+      color:var(--text);
+      cursor:pointer;
+      transition:.18s ease;
+      text-align:left;
+      font:inherit;
+    }
+
+    .sector-chip:hover{
+      transform:translateY(-1px);
+      border-color:rgba(255,255,255,.14);
+      background:rgba(255,255,255,.05);
+    }
+
+    .sector-chip.active{
+      border-color:rgba(255,255,255,.22);
+      box-shadow:0 0 0 1px rgba(255,255,255,.05) inset;
+      background:rgba(255,255,255,.07);
+    }
+
+    .sector-chip-code{
+      width:36px;
+      height:36px;
+      border-radius:12px;
+      display:grid;
+      place-items:center;
+      font-size:11px;
+      font-weight:800;
+      color:#08111f;
+      flex:0 0 auto;
+      border:1px solid rgba(8,17,31,.12);
+    }
+
+    .sector-chip-copy{
+      min-width:0;
+      display:flex;
+      flex-direction:column;
+      gap:3px;
+    }
+
+    .sector-chip-name{
+      font-size:13px;
+      font-weight:700;
+      color:var(--text);
+      white-space:nowrap;
+      overflow:hidden;
+      text-overflow:ellipsis;
+    }
+
+    .sector-chip-meta{
+      font-size:11px;
+      color:var(--muted);
+    }
+
+    .detail-scroll{
+      max-height:calc(100vh - 210px);
+      overflow:auto;
+    }
+
+    .detail-inner{
+      padding:20px;
+      display:flex;
+      flex-direction:column;
+      gap:18px;
+    }
+
+    .detail-header{
+      display:flex;
+      flex-direction:column;
+      gap:10px;
+    }
+
+    .detail-badge{
+      display:inline-flex;
+      align-items:center;
+      gap:9px;
+      width:fit-content;
+      padding:8px 12px;
+      border-radius:999px;
+      font-size:12px;
+      font-weight:800;
+      border:1px solid rgba(255,255,255,.08);
+      background:rgba(255,255,255,.04);
+    }
+
+    .detail-badge .dot{
+      width:12px;
+      height:12px;
+      border-radius:999px;
+      border:1px solid rgba(8,17,31,.12);
+      flex:0 0 auto;
+    }
+
+    .detail-title{
+      margin:0;
+      font-size:30px;
+      line-height:1.1;
+      letter-spacing:-.04em;
+    }
+
+    .detail-desc{
+      color:var(--muted);
+      font-size:14px;
+      line-height:1.6;
+      margin:0;
+    }
+
+    .detail-kpis{
+      display:grid;
+      grid-template-columns:repeat(2, minmax(0,1fr));
+      gap:10px;
+    }
+
+    .mini-kpi{
+      background:rgba(255,255,255,.035);
+      border:1px solid rgba(255,255,255,.06);
+      border-radius:18px;
+      padding:14px;
+      min-width:0;
+    }
+
+    .mini-kpi-label{
+      font-size:11px;
+      color:var(--muted2);
+      font-weight:700;
+      letter-spacing:.06em;
+      text-transform:uppercase;
+      margin-bottom:8px;
+    }
+
+    .mini-kpi-value{
+      font-size:22px;
+      font-weight:800;
+      letter-spacing:-.03em;
+      white-space:nowrap;
+      overflow:hidden;
+      text-overflow:ellipsis;
+    }
+
+    .mini-kpi-sub{
+      font-size:12px;
+      color:var(--muted);
+      margin-top:5px;
+    }
+
+    .section{
+      display:flex;
+      flex-direction:column;
+      gap:12px;
+    }
+
+    .section-head{
+      display:flex;
+      justify-content:space-between;
+      align-items:flex-end;
+      gap:12px;
+    }
+
+    .section-title{
+      font-size:15px;
+      font-weight:800;
+      letter-spacing:-.02em;
+    }
+
+    .section-sub{
+      font-size:12px;
+      color:var(--muted2);
+    }
+
+    .compare-card, .note-card{
+      padding:14px 16px;
+      border-radius:18px;
+      border:1px solid rgba(255,255,255,.06);
+      background:rgba(255,255,255,.03);
+    }
+
+    .compare-row{
+      display:grid;
+      grid-template-columns:70px 1fr auto;
+      gap:10px;
+      align-items:center;
+      font-size:13px;
+      margin-bottom:10px;
+    }
+
+    .compare-row:last-child{margin-bottom:0}
+
+    .compare-track{
+      position:relative;
+      height:12px;
+      border-radius:999px;
+      background:rgba(255,255,255,.05);
+      overflow:hidden;
+    }
+
+    .compare-fill{
+      position:absolute;
+      inset:0 auto 0 0;
+      border-radius:999px;
+      background:linear-gradient(90deg, rgba(255,255,255,.9), rgba(255,255,255,.35));
+    }
+
+    .mapping-note{
+      font-size:13px;
+      color:var(--muted);
+      line-height:1.6;
+    }
+
+    .tag-row{
+      display:flex;
+      gap:8px;
+      flex-wrap:wrap;
+    }
+
+    .tiny-tag{
+      display:inline-flex;
+      align-items:center;
+      gap:6px;
+      padding:7px 10px;
+      border-radius:999px;
+      font-size:12px;
+      color:var(--muted);
+      background:rgba(255,255,255,.04);
+      border:1px solid rgba(255,255,255,.06);
+    }
+
+    .tech-grid{
+      display:grid;
+      grid-template-columns:1fr;
+      gap:10px;
+    }
+
+    .tech-card{
+      border-radius:18px;
+      border:1px solid rgba(255,255,255,.06);
+      background:rgba(255,255,255,.035);
+      padding:14px 15px;
+    }
+
+    .tech-card-top{
+      display:flex;
+      justify-content:space-between;
+      gap:12px;
+      align-items:flex-start;
+      margin-bottom:10px;
+    }
+
+    .tech-name{
+      font-size:13px;
+      font-weight:700;
+      line-height:1.45;
+      min-width:0;
+    }
+
+    .tech-level{
+      font-size:13px;
+      font-weight:800;
+      white-space:nowrap;
+    }
+
+    .meter{
+      position:relative;
+      height:10px;
+      border-radius:999px;
+      background:rgba(255,255,255,.06);
+      overflow:hidden;
+      margin-bottom:10px;
+    }
+
+    .meter-fill{
+      position:absolute;
+      inset:0 auto 0 0;
+      border-radius:999px;
+      background:linear-gradient(90deg, rgba(125,211,252,.95), rgba(192,132,252,.85));
+    }
+
+    .tech-meta{
+      display:flex;
+      justify-content:space-between;
+      gap:10px;
+      font-size:12px;
+      color:var(--muted);
+      flex-wrap:wrap;
+    }
+
+    .mini-bars{
+      display:flex;
+      flex-direction:column;
+      gap:10px;
+    }
+
+    .mini-bar-row{
+      display:grid;
+      grid-template-columns:minmax(0,1fr) 1fr auto;
+      gap:10px;
+      align-items:center;
+      font-size:12px;
+    }
+
+    .mini-bar-label{
+      font-weight:700;
+      min-width:0;
+      overflow:hidden;
+      text-overflow:ellipsis;
+      white-space:nowrap;
+    }
+
+    .mini-bar-track{
+      position:relative;
+      height:10px;
+      border-radius:999px;
+      background:rgba(255,255,255,.06);
+      overflow:hidden;
+    }
+
+    .mini-bar-fill{
+      position:absolute;
+      inset:0 auto 0 0;
+      border-radius:999px;
+      background:linear-gradient(90deg, rgba(134,239,172,.95), rgba(125,211,252,.85));
+    }
+
+    .mini-bar-value{
+      color:var(--muted);
+      white-space:nowrap;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .filter-row{
+      display:flex;
+      gap:8px;
+      flex-wrap:wrap;
+    }
+
+    .filter-btn{
+      font:inherit;
+      cursor:pointer;
+      padding:8px 12px;
+      border-radius:999px;
+      border:1px solid rgba(255,255,255,.08);
+      background:rgba(255,255,255,.03);
+      color:var(--muted);
+      font-size:12px;
+      font-weight:700;
+      transition:.16s ease;
+    }
+
+    .filter-btn:hover{
+      border-color:rgba(255,255,255,.18);
+      color:var(--text);
+    }
+
+    .filter-btn.active{
+      color:#08111f;
+      border-color:transparent;
+      box-shadow:none;
+    }
+
+    .table-wrap{
+      border-radius:18px;
+      overflow:hidden;
+      border:1px solid rgba(255,255,255,.06);
+      background:rgba(255,255,255,.025);
+    }
+
+    table{
+      width:100%;
+      border-collapse:collapse;
+      font-size:12px;
+    }
+
+    thead th{
+      position:sticky;
+      top:0;
+      z-index:1;
+      text-align:left;
+      padding:12px 12px;
+      background:#13243d;
+      color:var(--muted);
+      font-size:11px;
+      letter-spacing:.05em;
+      text-transform:uppercase;
+      border-bottom:1px solid rgba(255,255,255,.06);
+    }
+
+    tbody td{
+      padding:12px;
+      border-bottom:1px solid rgba(255,255,255,.05);
+      vertical-align:top;
+      line-height:1.45;
+    }
+
+    tbody tr:last-child td{border-bottom:0}
+    tbody tr:hover td{background:rgba(255,255,255,.025)}
+
+    .td-title{
+      font-weight:700;
+      color:var(--text);
+      margin-bottom:4px;
+    }
+
+    .td-sub{
+      color:var(--muted);
+      font-size:11px;
+    }
+
+    .budget-cell{
+      font-weight:800;
+      white-space:nowrap;
+      font-variant-numeric:tabular-nums;
+    }
+
+    .focus-badge{
+      display:inline-flex;
+      align-items:center;
+      gap:6px;
+      padding:5px 9px;
+      border-radius:999px;
+      background:rgba(255,255,255,.05);
+      border:1px solid rgba(255,255,255,.06);
+      color:var(--muted);
+      font-size:11px;
+      font-weight:700;
+      white-space:nowrap;
+    }
+
+    .more-wrap{
+      display:flex;
+      justify-content:center;
+    }
+
+    .more-btn{
+      font:inherit;
+      cursor:pointer;
+      padding:10px 14px;
+      border-radius:12px;
+      border:1px solid rgba(255,255,255,.08);
+      background:rgba(255,255,255,.03);
+      color:var(--text);
+      font-size:13px;
+      font-weight:700;
+    }
+
+    .more-btn:hover{
+      background:rgba(255,255,255,.06);
+      border-color:rgba(255,255,255,.14);
+    }
+
+    .empty{
+      padding:20px 16px;
+      border-radius:18px;
+      border:1px dashed rgba(255,255,255,.12);
+      color:var(--muted);
+      font-size:13px;
+      line-height:1.6;
+      background:rgba(255,255,255,.02);
+    }
+
+    .footer-note{
+      padding:14px 16px;
+      border-radius:18px;
+      border:1px solid rgba(255,255,255,.06);
+      background:rgba(255,255,255,.03);
+      color:var(--muted2);
+      font-size:12px;
+      line-height:1.6;
+    }
+
+    .rank-list{
+      display:flex;
+      flex-direction:column;
+      gap:10px;
+    }
+
+    .rank-item{
+      display:grid;
+      grid-template-columns:auto 1fr auto;
+      gap:10px;
+      align-items:center;
+      padding:10px 12px;
+      border-radius:14px;
+      border:1px solid rgba(255,255,255,.06);
+      background:rgba(255,255,255,.03);
+    }
+
+    .rank-badge{
+      width:34px;
+      height:34px;
+      border-radius:12px;
+      display:grid;
+      place-items:center;
+      font-size:11px;
+      font-weight:800;
+      color:#08111f;
+      border:1px solid rgba(8,17,31,.12);
+    }
+
+    .rank-name{
+      font-size:13px;
+      font-weight:700;
+      margin-bottom:4px;
+    }
+
+    .rank-meta{
+      font-size:11px;
+      color:var(--muted);
+    }
+
+    .svg-label{
+      user-select:none;
+      pointer-events:none;
+    }
+
+    .sector-block{
+      cursor:pointer;
+      transition:transform .18s ease;
+    }
+
+    .sector-block .top-face{
+      transition:filter .16s ease, stroke-width .16s ease, opacity .16s ease;
+    }
+
+    .sector-block.hovered .top-face{
+      filter:brightness(1.03);
+    }
+
+    .sector-block.selected .top-face{
+      stroke:#f8fafc;
+      stroke-width:2.2;
+    }
+
+    .sector-block.selected .side-face{
+      stroke:#f8fafc;
+      stroke-opacity:.25;
+    }
+
+    @media (max-width: 1220px){
+      .layout{
+        grid-template-columns:1fr;
+      }
+      .detail-scroll{
+        max-height:none;
+      }
+    }
+
+    @media (max-width: 920px){
+      .topbar{
+        grid-template-columns:1fr;
+      }
+      .kpi-grid{
+        grid-template-columns:repeat(2, minmax(0,1fr));
+        min-width:0;
+      }
+      .sector-chip-grid{
+        grid-template-columns:repeat(2, minmax(0,1fr));
+        width:100%;
+      }
+    }
+
+    @media (max-width: 640px){
+      .page{
+        width:min(100vw - 16px, 100%);
+        margin:8px auto 16px;
+      }
+      .topbar, .panel{
+        border-radius:18px;
+      }
+      .topbar{
+        padding:18px;
+      }
+      .panel-head, .map-wrap, .detail-inner{
+        padding-left:16px;
+        padding-right:16px;
+      }
+      .kpi-grid{
+        grid-template-columns:1fr 1fr;
+      }
+      .detail-kpis{
+        grid-template-columns:1fr 1fr;
+      }
+      .mini-kpi-value{
+        font-size:19px;
+      }
+      .detail-title{
+        font-size:26px;
+      }
+      .compare-row{
+        grid-template-columns:60px 1fr;
+      }
+      .compare-row > :last-child{
+        grid-column:2;
+        justify-self:end;
+      }
+      .mini-bar-row{
+        grid-template-columns:1fr;
+      }
+      .mini-bar-row > :last-child{
+        justify-self:end;
+      }
+      .map-footer{
+        flex-direction:column;
+      }
+    }
+  </style>
 </head>
 <body>
-  <div class="bg-grid"></div>
-  <header class="hero shell">
-    <div class="hero__text">
-      <div class="eyebrow">INTERACTIVE STRATEGIC TECHNOLOGY MAP</div>
-      <h1>국가 기술관리체계<br />인터랙티브 웹사이트</h1>
-      <p class="hero__desc">
-        <strong>PPT를 우선 기준</strong>으로 19개 분야와 5개 법령 체계를 정리했습니다.
-        기술 검색, 분야별 상세 보기, 법령 포함 여부, 전체 요약 매트릭스를 한 화면에서 탐색할 수 있습니다.
-      </p>
-      <div class="hero__stats" id="heroStats"></div>
-    </div>
-    <div class="hero__panel glass">
-      <div class="panel-title">검색 및 필터</div>
-      <label class="search-wrap">
-        <span>기술명 · 분야 · 중분류 · 비고 검색</span>
-        <input id="searchInput" type="search" placeholder="예: DRAM, 자율주행, 수전해, 백신, 위성" />
-      </label>
-
-      <div class="filters">
-        <div>
-          <div class="filter-label">법령 기준</div>
-          <div id="lawFilters" class="chip-row"></div>
+  <div class="page">
+    <header class="topbar">
+      <div>
+        <div class="eyebrow">Strategic Tech 3D Heatmap</div>
+        <h1>국가전략기술 3D 현황맵</h1>
+        <p class="subtitle">12대 국가전략기술을 <strong>면적 = 2026년 국가예산</strong>, <strong>높이 = 기술도달수준</strong>으로 표현한 인터랙티브 맵입니다. 블록을 클릭하면 세부 중점기술과 관련사업, 부처별 예산을 확인할 수 있습니다.</p>
+        <div class="headline-notes">
+          <div class="note-pill">Stock heatmap 모티브</div>
+          <div class="note-pill">12개 분야 파스텔톤 구분</div>
+          <div class="note-pill">세부 중점기술 50개 포함</div>
         </div>
-        <div>
-          <div class="filter-label">포함 상태</div>
-          <div id="statusFilters" class="chip-row">
-            <button class="chip chip--active" data-status-filter="all">전체</button>
-            <button class="chip" data-status-filter="exact">직접 포함 (●)</button>
-            <button class="chip" data-status-filter="related">연관/유사 (○)</button>
+      </div>
+      <div class="kpi-grid">
+        <div class="kpi">
+          <div class="kpi-label">2026 Total Budget</div>
+          <div class="kpi-value" id="kpiTotalBudget">-</div>
+          <div class="kpi-sub">전략기술 12대 분야 합산</div>
+        </div>
+        <div class="kpi">
+          <div class="kpi-label">Average Tech Level</div>
+          <div class="kpi-value" id="kpiAvgTech">-</div>
+          <div class="kpi-sub">KISTEP 기술수준 평균</div>
+        </div>
+        <div class="kpi">
+          <div class="kpi-label">Projects</div>
+          <div class="kpi-value" id="kpiProjects">-</div>
+          <div class="kpi-sub">관련 세부사업/내역사업 수</div>
+        </div>
+        <div class="kpi">
+          <div class="kpi-label">Detail Technologies</div>
+          <div class="kpi-value" id="kpiDetails">-</div>
+          <div class="kpi-sub">세부 중점기술 수</div>
+        </div>
+      </div>
+    </header>
+
+    <section class="legend-strip">
+      <div class="legend-title">맵 읽는 법</div>
+      <div class="legend-item"><span class="legend-swatch" style="background:linear-gradient(180deg,#a7c7e7,#86a9d8)"></span>바닥 면적 = 2026년 예산 규모</div>
+      <div class="legend-item"><span class="legend-swatch" style="background:linear-gradient(180deg,#e7e7ff,#b4b4ff)"></span>건물 높이 = 기술도달수준(%)</div>
+      <div class="legend-item"><span class="legend-swatch" style="background:#ffffff22"></span>클릭 시 우측 패널에 사업목록 표시</div>
+      <div class="legend-item"><span class="legend-swatch" style="background:#ffffff10"></span>원본 시트 값을 그대로 반영하고 총계 보정은 하지 않음</div>
+    </section>
+
+    <main class="layout">
+      <section class="panel">
+        <div class="panel-head">
+          <div>
+            <div class="panel-title">3D Strategic Map</div>
+            <div class="panel-sub">예산(면적) × 기술수준(높이) · 12개 전략기술</div>
           </div>
         </div>
-      </div>
-
-      <div class="legend">
-        <div><span class="legend-mark legend-mark--exact"></span> 직접 포함 (●)</div>
-        <div><span class="legend-mark legend-mark--related"></span> 연관/유사 (○)</div>
-        <div><span class="legend-mark legend-mark--none"></span> 해당 없음</div>
-      </div>
-    </div>
-  </header>
-
-  <main class="shell">
-    <section class="section">
-      <div class="section-head">
-        <div>
-          <div class="section-kicker">OVERVIEW</div>
-          <h2>전체 요약 매트릭스</h2>
+        <div class="map-wrap">
+          <div class="map-frame" id="mapFrame">
+            <svg id="treemap3d" viewBox="0 0 1100 720" preserveAspectRatio="xMidYMid meet" aria-label="국가전략기술 3D 맵"></svg>
+            <div id="tooltip" class="tooltip"></div>
+          </div>
         </div>
-        <p class="section-note">셀을 누르면 해당 분야와 법령으로 바로 필터링됩니다.</p>
-      </div>
-      <div class="glass matrix-wrap">
-        <div id="matrix"></div>
-      </div>
-    </section>
-
-    <section class="section">
-      <div class="section-head">
-        <div>
-          <div class="section-kicker">FIELDS</div>
-          <h2>19개 분야 탐색</h2>
+        <div class="map-footer">
+          <div class="map-note">
+            시트 구조상 <strong>인공지능</strong>과 <strong>사이버보안</strong>은 사업 목록에 세부 중점기술 컬럼이 없어, 우측 패널에서는 분야 단위 사업목록 중심으로 보여줍니다. 다른 분야는 가능한 범위에서 세부기술-사업 매핑을 함께 표시합니다.
+          </div>
+          <div class="sector-chip-grid" id="sectorChipGrid"></div>
         </div>
-        <p id="resultSummary" class="section-note"></p>
-      </div>
-      <div id="fieldGrid" class="field-grid"></div>
-    </section>
-  </main>
+      </section>
 
-  <dialog id="detailModal" class="detail-modal">
-    <div class="detail-modal__header">
-      <div>
-        <div class="section-kicker">DETAIL VIEW</div>
-        <h3 id="modalTitle">분야 상세</h3>
-        <p id="modalMeta" class="modal-meta"></p>
-      </div>
-      <button id="closeModalBtn" class="icon-btn" aria-label="닫기">✕</button>
-    </div>
-    <div id="modalLawTabs" class="law-tabs"></div>
-    <div id="modalBody" class="detail-modal__body"></div>
-  </dialog>
-
-  <template id="fieldCardTemplate">
-    <article class="field-card glass">
-      <div class="field-card__top">
-        <div>
-          <div class="field-card__eyebrow">기술분야</div>
-          <h3 class="field-card__title"></h3>
-          <div class="field-card__slides"></div>
+      <aside class="panel">
+        <div class="panel-head">
+          <div>
+            <div class="panel-title">분야 상세</div>
+            <div class="panel-sub">블록 클릭 또는 아래 칩 선택</div>
+          </div>
         </div>
-        <button class="field-card__btn">상세 보기</button>
-      </div>
-      <div class="field-card__stats"></div>
-      <div class="field-card__laws"></div>
-      <div class="field-card__technologies"></div>
-    </article>
-  </template>
+        <div class="detail-scroll">
+          <div class="detail-inner" id="detailPanel"></div>
+        </div>
+      </aside>
+    </main>
+  </div>
 
-  <script src="app.js"></script>
+  <script src="data.js"></script>
+  <script>
+    (function(){
+      const DATA = window.STRATEGIC_TECH_DATA;
+      const state = {
+        selectedSectorId: null,
+        focusFilter: 'ALL',
+        projectLimit: 18
+      };
+
+      const svg = document.getElementById('treemap3d');
+      const tooltip = document.getElementById('tooltip');
+      const detailPanel = document.getElementById('detailPanel');
+      const sectorChipGrid = document.getElementById('sectorChipGrid');
+      const NS = 'http://www.w3.org/2000/svg';
+
+      const sectorsById = new Map(DATA.sectors.map(sector => [sector.id, sector]));
+
+      function clamp(value, min, max){
+        return Math.max(min, Math.min(max, value));
+      }
+
+      function escapeHtml(value){
+        return String(value ?? '')
+          .replace(/&/g, '&amp;')
+          .replace(/</g, '&lt;')
+          .replace(/>/g, '&gt;')
+          .replace(/"/g, '&quot;')
+          .replace(/'/g, '&#39;');
+      }
+
+      function formatInt(value){
+        return Number(value || 0).toLocaleString('ko-KR');
+      }
+
+      function formatPct(value, signed = false){
+        const n = Number(value || 0);
+        const str = n.toLocaleString('ko-KR', { minimumFractionDigits: 1, maximumFractionDigits: 1 }) + '%';
+        return signed && n > 0 ? '+' + str : str;
+      }
+
+      function formatSectorBudget(trillion){
+        return Number(trillion || 0).toLocaleString('ko-KR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + '조원';
+      }
+
+      function formatBudget(million){
+        const value = Number(million || 0);
+        if (!value) return '-';
+        if (value >= 1000000){
+          return (value / 1000000).toLocaleString('ko-KR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + '조원';
+        }
+        if (value >= 100){
+          const eok = value / 100;
+          return eok.toLocaleString('ko-KR', { minimumFractionDigits: eok < 10 ? 1 : 0, maximumFractionDigits: 1 }) + '억원';
+        }
+        return value.toLocaleString('ko-KR', { maximumFractionDigits: 1 }) + '백만원';
+      }
+
+      function formatPeriod(start, end){
+        const s = start ?? '—';
+        const e = end ?? '—';
+        return `${s} ~ ${e}`;
+      }
+
+      function hexToRgb(hex){
+        const cleaned = hex.replace('#', '');
+        const full = cleaned.length === 3 ? cleaned.split('').map(ch => ch + ch).join('') : cleaned;
+        const num = parseInt(full, 16);
+        return {
+          r: (num >> 16) & 255,
+          g: (num >> 8) & 255,
+          b: num & 255
+        };
+      }
+
+      function rgba(hex, alpha){
+        const { r, g, b } = hexToRgb(hex);
+        return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+      }
+
+      function shade(hex, percent){
+        const { r, g, b } = hexToRgb(hex);
+        const t = percent < 0 ? 0 : 255;
+        const p = Math.abs(percent) / 100;
+        const nr = Math.round((t - r) * p + r);
+        const ng = Math.round((t - g) * p + g);
+        const nb = Math.round((t - b) * p + b);
+        return `rgb(${nr}, ${ng}, ${nb})`;
+      }
+
+      function maxBy(items, getter){
+        return items.reduce((acc, item) => getter(item) > getter(acc) ? item : acc, items[0]);
+      }
+
+      function updateTopStats(){
+        document.getElementById('kpiTotalBudget').textContent = formatSectorBudget(DATA.meta.totalBudgetTrillion2026);
+        document.getElementById('kpiAvgTech').textContent = formatPct(DATA.meta.averageTechLevelPct);
+        document.getElementById('kpiProjects').textContent = formatInt(DATA.meta.totalProjects);
+        document.getElementById('kpiDetails').textContent = formatInt(DATA.meta.detailTechCount);
+      }
+
+      function createSvgNode(name, attrs = {}){
+        const el = document.createElementNS(NS, name);
+        Object.entries(attrs).forEach(([key, value]) => el.setAttribute(key, String(value)));
+        return el;
+      }
+
+      function pointsToString(points){
+        return points.map(pair => pair.join(',')).join(' ');
+      }
+
+      function binaryTreemap(items, x, y, w, h, output = []){
+        if (!items.length) return output;
+        if (items.length === 1){
+          output.push({ item: items[0], x, y, w, h });
+          return output;
+        }
+
+        const total = items.reduce((sum, item) => sum + item.budgetMillion2026, 0);
+        let running = 0;
+        let splitIndex = 1;
+        let bestDiff = Infinity;
+
+        for (let i = 1; i < items.length; i += 1){
+          running += items[i - 1].budgetMillion2026;
+          const diff = Math.abs(total / 2 - running);
+          if (diff < bestDiff){
+            bestDiff = diff;
+            splitIndex = i;
+          }
+        }
+
+        const first = items.slice(0, splitIndex);
+        const second = items.slice(splitIndex);
+        const firstTotal = first.reduce((sum, item) => sum + item.budgetMillion2026, 0);
+        const ratio = total ? firstTotal / total : 0.5;
+
+        if (w >= h){
+          const w1 = w * ratio;
+          binaryTreemap(first, x, y, w1, h, output);
+          binaryTreemap(second, x + w1, y, w - w1, h, output);
+        } else {
+          const h1 = h * ratio;
+          binaryTreemap(first, x, y, w, h1, output);
+          binaryTreemap(second, x, y + h1, w, h - h1, output);
+        }
+        return output;
+      }
+
+      function getLayout(){
+        const items = [...DATA.sectors].sort((a, b) => b.budgetMillion2026 - a.budgetMillion2026);
+        const raw = binaryTreemap(items, 120, 126, 850, 470);
+        return raw.map(rect => {
+          const pad = 6;
+          return {
+            ...rect,
+            x: rect.x + pad,
+            y: rect.y + pad,
+            w: Math.max(rect.w - pad * 2, 60),
+            h: Math.max(rect.h - pad * 2, 58)
+          };
+        });
+      }
+
+      function getSelectedSector(){
+        return sectorsById.get(state.selectedSectorId) || DATA.sectors[0];
+      }
+
+      function renderSectorChips(){
+        sectorChipGrid.innerHTML = DATA.sectors.map(sector => `
+          <button class="sector-chip ${sector.id === state.selectedSectorId ? 'active' : ''}" data-sector-id="${sector.id}" type="button">
+            <span class="sector-chip-code" style="background:${sector.color}">${escapeHtml(sector.shortCode)}</span>
+            <span class="sector-chip-copy">
+              <span class="sector-chip-name">${escapeHtml(sector.name)}</span>
+              <span class="sector-chip-meta">${formatSectorBudget(sector.budgetTrillion2026)} · ${formatPct(sector.techLevelPct)}</span>
+            </span>
+          </button>
+        `).join('');
+
+        sectorChipGrid.querySelectorAll('[data-sector-id]').forEach(button => {
+          button.addEventListener('click', () => {
+            const id = Number(button.getAttribute('data-sector-id'));
+            selectSector(id);
+          });
+        });
+      }
+
+      function renderMap(){
+        const layout = getLayout();
+        const selectedId = state.selectedSectorId;
+
+        svg.innerHTML = '';
+
+        const defs = createSvgNode('defs');
+        defs.appendChild(createSvgNode('filter', { id: 'softShadow', x: '-30%', y: '-30%', width: '160%', height: '160%' }));
+        defs.querySelector('#softShadow').appendChild(createSvgNode('feDropShadow', {
+          dx: '0',
+          dy: '14',
+          stdDeviation: '18',
+          'flood-color': '#000000',
+          'flood-opacity': '0.30'
+        }));
+        svg.appendChild(defs);
+
+        const bgRect = createSvgNode('rect', {
+          x: 90, y: 100, width: 900, height: 510, rx: 26,
+          fill: 'rgba(255,255,255,0.03)',
+          stroke: 'rgba(255,255,255,0.06)'
+        });
+        svg.appendChild(bgRect);
+
+        for (let i = 0; i <= 10; i += 1){
+          const gx = 120 + (850 / 10) * i;
+          const gy = 126 + (470 / 10) * i;
+          svg.appendChild(createSvgNode('line', {
+            x1: gx, y1: 126, x2: gx, y2: 596,
+            stroke: 'rgba(255,255,255,0.05)', 'stroke-width': 1
+          }));
+          svg.appendChild(createSvgNode('line', {
+            x1: 120, y1: gy, x2: 970, y2: gy,
+            stroke: 'rgba(255,255,255,0.05)', 'stroke-width': 1
+          }));
+        }
+
+        const sortedForDraw = [...layout].sort((a, b) => (a.x + a.y) - (b.x + b.y));
+        sortedForDraw.forEach(rect => {
+          const sector = rect.item;
+          const selected = sector.id === selectedId;
+          const height = 22 + sector.techLevelPct * 0.74;
+          const dx = height * 0.34;
+          const dy = height * 0.48;
+
+          const baseTL = [rect.x, rect.y];
+          const baseTR = [rect.x + rect.w, rect.y];
+          const baseBR = [rect.x + rect.w, rect.y + rect.h];
+          const baseBL = [rect.x, rect.y + rect.h];
+
+          const topTL = [rect.x - dx, rect.y - dy];
+          const topTR = [rect.x + rect.w - dx, rect.y - dy];
+          const topBR = [rect.x + rect.w - dx, rect.y + rect.h - dy];
+          const topBL = [rect.x - dx, rect.y + rect.h - dy];
+
+          const shadow = [
+            [baseBL[0] + 10, baseBL[1] + 12],
+            [baseBR[0] + 20, baseBR[1] + 12],
+            [baseBR[0] + 6, baseBR[1] + 34],
+            [baseBL[0] - 6, baseBL[1] + 34]
+          ];
+
+          const group = createSvgNode('g', {
+            class: `sector-block ${selected ? 'selected' : ''}`,
+            'data-sector-id': sector.id
+          });
+
+          group.appendChild(createSvgNode('polygon', {
+            points: pointsToString(shadow),
+            fill: 'rgba(0,0,0,0.18)'
+          }));
+
+          group.appendChild(createSvgNode('polygon', {
+            class: 'side-face',
+            points: pointsToString([topBL, topBR, baseBR, baseBL]),
+            fill: shade(sector.color, -24),
+            stroke: rgba('#ffffff', 0.15),
+            'stroke-width': 1
+          }));
+
+          group.appendChild(createSvgNode('polygon', {
+            class: 'side-face',
+            points: pointsToString([topTR, baseTR, baseBR, topBR]),
+            fill: shade(sector.color, -34),
+            stroke: rgba('#ffffff', 0.16),
+            'stroke-width': 1
+          }));
+
+          group.appendChild(createSvgNode('polygon', {
+            class: 'top-face',
+            points: pointsToString([topTL, topTR, topBR, topBL]),
+            fill: sector.color,
+            stroke: rgba('#08111f', 0.22),
+            'stroke-width': selected ? 2.2 : 1.2,
+            filter: 'url(#softShadow)'
+          }));
+
+          group.appendChild(createSvgNode('polyline', {
+            points: pointsToString([topTL, topTR, topBR, topBL, topTL]),
+            fill: 'none',
+            stroke: 'rgba(255,255,255,0.28)',
+            'stroke-width': 1
+          }));
+
+          const labelGroup = createSvgNode('g', { class: 'svg-label' });
+          const fontSizeMain = clamp(Math.min(rect.w, rect.h) * 0.12, 13, 26);
+          const fontSizeSub = clamp(fontSizeMain * 0.58, 10, 13);
+          const labelX = topTL[0] + rect.w / 2;
+          const labelY = topTL[1] + rect.h / 2 - fontSizeMain * 0.15;
+          const mainLines = sector.labelLines || [sector.name];
+          const totalLines = mainLines.length + 1;
+          const startY = labelY - ((totalLines - 1) * fontSizeMain * 0.54) / 2;
+
+          const code = createSvgNode('text', {
+            x: topTL[0] + 12,
+            y: topTL[1] + 18,
+            fill: 'rgba(8,17,31,0.70)',
+            'font-size': 11,
+            'font-weight': 800
+          });
+          code.textContent = sector.shortCode;
+          labelGroup.appendChild(code);
+
+          const text = createSvgNode('text', {
+            x: labelX,
+            y: startY,
+            fill: '#08111f',
+            'font-size': fontSizeMain,
+            'font-weight': 800,
+            'text-anchor': 'middle'
+          });
+
+          mainLines.forEach((line, index) => {
+            const tspan = createSvgNode('tspan', {
+              x: labelX,
+              dy: index === 0 ? 0 : fontSizeMain * 1.08
+            });
+            tspan.textContent = line;
+            text.appendChild(tspan);
+          });
+
+          const metricLine = createSvgNode('tspan', {
+            x: labelX,
+            dy: fontSizeMain * 1.12,
+            'font-size': fontSizeSub,
+            'font-weight': 700,
+            fill: 'rgba(8,17,31,0.74)'
+          });
+          metricLine.textContent = `${sector.budgetTrillion2026.toFixed(2)}조 · ${sector.techLevelPct.toFixed(1)}%`;
+          text.appendChild(metricLine);
+          labelGroup.appendChild(text);
+
+          group.appendChild(labelGroup);
+
+          group.addEventListener('mouseenter', () => {
+            group.classList.add('hovered');
+            tooltip.classList.add('visible');
+            tooltip.innerHTML = `
+              <h4>${escapeHtml(sector.name)}</h4>
+              <p>2026 예산: <strong>${formatSectorBudget(sector.budgetTrillion2026)}</strong></p>
+              <p>기술수준: <strong>${formatPct(sector.techLevelPct)}</strong> · 세부기술 ${formatInt(sector.detailTechCount)}개</p>
+              <p>관련사업: <strong>${formatInt(sector.projectsCount)}개</strong></p>
+            `;
+          });
+
+          group.addEventListener('mousemove', (event) => {
+            const frame = document.getElementById('mapFrame').getBoundingClientRect();
+            const x = event.clientX - frame.left;
+            const y = event.clientY - frame.top;
+            tooltip.style.left = x + 'px';
+            tooltip.style.top = y + 'px';
+          });
+
+          group.addEventListener('mouseleave', () => {
+            group.classList.remove('hovered');
+            tooltip.classList.remove('visible');
+          });
+
+          group.addEventListener('click', () => selectSector(sector.id));
+          svg.appendChild(group);
+        });
+
+        const guideText = createSvgNode('text', {
+          x: 96, y: 84,
+          fill: 'rgba(236,243,255,0.72)',
+          'font-size': 14,
+          'font-weight': 700
+        });
+        guideText.textContent = '면적 = 예산 · 높이 = 기술수준';
+        svg.appendChild(guideText);
+
+        const sourceText = createSvgNode('text', {
+          x: 96, y: 664,
+          fill: 'rgba(147,167,196,0.78)',
+          'font-size': 11
+        });
+        sourceText.textContent = `원본 파일: ${DATA.meta.sourceFile}`;
+        svg.appendChild(sourceText);
+      }
+
+      function getMappingMessage(sector){
+        if (!sector.hasFocusTechMapping){
+          return '이 분야 시트에는 중점기술 컬럼이 없어 사업 목록을 분야 단위로만 보여줍니다.';
+        }
+        if (sector.mappingCoveragePct >= 99.9){
+          return '사업 예산이 세부 중점기술과 대부분 직접 연결되어 있습니다.';
+        }
+        return `세부기술로 직접 연결된 2026년 예산은 ${formatPct(sector.mappingCoveragePct)}이며, 나머지는 기타/공통/교차분야 사업으로 남겨 두었습니다.`;
+      }
+
+      function renderDetailPanel(){
+        const sector = getSelectedSector();
+        const mappedTechs = sector.detailTechs.filter(item => item.mapped);
+        const activeFilter = state.focusFilter;
+        const filterable = mappedTechs.length > 0;
+        const filteredProjects = sector.projects.filter(project => {
+          if (activeFilter === 'ALL') return true;
+          return project.mappedDetailTech === activeFilter;
+        });
+        const visibleProjects = filteredProjects.slice(0, state.projectLimit);
+        const unmatchedFocus = sector.unmatchedFocusTechs.slice(0, 5);
+
+        detailPanel.innerHTML = `
+          <section class="detail-header">
+            <div class="detail-badge">
+              <span class="dot" style="background:${sector.color}"></span>
+              No.${String(sector.id).padStart(2, '0')} · ${escapeHtml(sector.shortCode)}
+            </div>
+            <h2 class="detail-title">${escapeHtml(sector.name)}</h2>
+            <p class="detail-desc">세부 중점기술 ${formatInt(sector.detailTechCount)}개, 관련사업 ${formatInt(sector.projectsCount)}개를 함께 보여줍니다. 기본 정렬은 2026년 예산이 큰 사업 순입니다.</p>
+          </section>
+
+          <section class="detail-kpis">
+            <article class="mini-kpi">
+              <div class="mini-kpi-label">2026 Budget</div>
+              <div class="mini-kpi-value">${formatSectorBudget(sector.budgetTrillion2026)}</div>
+              <div class="mini-kpi-sub">세부분야 합계는 원본 시트 기준 그대로 반영</div>
+            </article>
+            <article class="mini-kpi">
+              <div class="mini-kpi-label">Tech Level</div>
+              <div class="mini-kpi-value">${formatPct(sector.techLevelPct)}</div>
+              <div class="mini-kpi-sub">KISTEP 기술수준</div>
+            </article>
+            <article class="mini-kpi">
+              <div class="mini-kpi-label">Growth</div>
+              <div class="mini-kpi-value">${formatPct(sector.growthPct, true)}</div>
+              <div class="mini-kpi-sub">2025 → 2026 예산 증가율</div>
+            </article>
+            <article class="mini-kpi">
+              <div class="mini-kpi-label">Projects</div>
+              <div class="mini-kpi-value">${formatInt(sector.projectsCount)}개</div>
+              <div class="mini-kpi-sub">분야별 관련사업 건수</div>
+            </article>
+          </section>
+
+          <section class="section">
+            <div class="section-head">
+              <div class="section-title">연도별 예산 비교</div>
+              <div class="section-sub">사업 시트 합계 기준</div>
+            </div>
+            <div class="compare-card">
+              ${renderCompareRows(sector)}
+            </div>
+          </section>
+
+          <section class="section">
+            <div class="section-head">
+              <div class="section-title">세부 중점기술</div>
+              <div class="section-sub">${filterable ? '일부 분야는 세부기술-사업 매핑 포함' : '기술수준 중심 표시'}</div>
+            </div>
+            <div class="note-card mapping-note">${getMappingMessage(sector)}</div>
+            ${unmatchedFocus.length ? `
+              <div class="tag-row">
+                ${unmatchedFocus.map(item => `<span class="tiny-tag">미매핑: ${escapeHtml(item.name)} · ${formatInt(item.count)}건</span>`).join('')}
+              </div>
+            ` : ''}
+            <div class="tech-grid">
+              ${sector.detailTechs.map(item => `
+                <article class="tech-card">
+                  <div class="tech-card-top">
+                    <div class="tech-name">${escapeHtml(item.name)}</div>
+                    <div class="tech-level">${formatPct(item.techLevelPct)}</div>
+                  </div>
+                  <div class="meter"><div class="meter-fill" style="width:${Math.max(2, item.techLevelPct)}%"></div></div>
+                  <div class="tech-meta">
+                    <span>${item.mapped ? `연계 예산 ${formatBudget(item.budgetMillion2026)}` : (sector.hasFocusTechMapping ? '직접 매핑된 사업 예산 없음' : '사업-세부기술 매핑 정보 없음')}</span>
+                    <span>${item.mapped ? `사업 ${formatInt(item.projectCount)}개` : ''}</span>
+                  </div>
+                </article>
+              `).join('')}
+            </div>
+          </section>
+
+          <section class="section">
+            <div class="section-head">
+              <div class="section-title">주요 부처별 2026 예산</div>
+              <div class="section-sub">상위 ${Math.min(6, sector.topMinistries.length)}개 부처</div>
+            </div>
+            <div class="compare-card">
+              ${renderMinistryRows(sector)}
+            </div>
+          </section>
+
+          <section class="section">
+            <div class="section-head">
+              <div class="section-title">관련사업 목록</div>
+              <div class="section-sub">${filterable ? '세부기술 필터 가능' : '분야 전체 사업 목록'}</div>
+            </div>
+            ${filterable ? `
+              <div class="filter-row">
+                <button type="button" class="filter-btn ${activeFilter === 'ALL' ? 'active' : ''}" data-focus-filter="ALL" style="${activeFilter === 'ALL' ? `background:${sector.color};` : ''}">전체</button>
+                ${mappedTechs.map(item => `
+                  <button type="button" class="filter-btn ${activeFilter === item.name ? 'active' : ''}" data-focus-filter="${escapeHtml(item.name)}" style="${activeFilter === item.name ? `background:${sector.color};` : ''}">
+                    ${escapeHtml(item.name)}
+                  </button>
+                `).join('')}
+              </div>
+            ` : ''}
+
+            <div class="table-wrap">
+              <table>
+                <thead>
+                  <tr>
+                    <th style="width:18%">부처</th>
+                    <th style="width:44%">사업명</th>
+                    <th style="width:20%">세부기술/기간</th>
+                    <th style="width:18%">26년 예산</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  ${visibleProjects.map(project => `
+                    <tr>
+                      <td>${escapeHtml(project.ministry || '-')}</td>
+                      <td>
+                        <div class="td-title">${escapeHtml(project.program || project.subproject || '-')}</div>
+                        ${project.subproject && project.subproject !== project.program ? `<div class="td-sub">${escapeHtml(project.subproject)}</div>` : ''}
+                      </td>
+                      <td>
+                        ${project.mappedDetailTech ? `<span class="focus-badge">${escapeHtml(project.mappedDetailTech)}</span>` : `<span class="focus-badge">${escapeHtml(project.focusTech || '분야 공통')}</span>`}
+                        <div class="td-sub" style="margin-top:6px">${escapeHtml(formatPeriod(project.start, project.end))}</div>
+                      </td>
+                      <td class="budget-cell">${formatBudget(project.budgetMillion2026)}</td>
+                    </tr>
+                  `).join('') || `<tr><td colspan="4"><div class="empty">표시할 사업이 없습니다.</div></td></tr>`}
+                </tbody>
+              </table>
+            </div>
+
+            ${filteredProjects.length > state.projectLimit ? `
+              <div class="more-wrap">
+                <button type="button" class="more-btn" id="moreProjectsBtn">사업 더 보기 (${formatInt(filteredProjects.length - state.projectLimit)}개 남음)</button>
+              </div>
+            ` : ''}
+          </section>
+
+          <div class="footer-note">
+            기준 파일: <strong>${escapeHtml(DATA.meta.sourceFile)}</strong><br />
+            데이터 단위: 전략기술 총예산은 조원, 사업 예산은 백만원 기준으로 저장했습니다. 총계 불일치 보정은 하지 않고 시트 값을 그대로 사용했습니다.
+          </div>
+        `;
+
+        detailPanel.querySelectorAll('[data-focus-filter]').forEach(button => {
+          button.addEventListener('click', () => {
+            state.focusFilter = button.getAttribute('data-focus-filter');
+            state.projectLimit = 18;
+            renderDetailPanel();
+          });
+        });
+
+        const moreButton = document.getElementById('moreProjectsBtn');
+        if (moreButton){
+          moreButton.addEventListener('click', () => {
+            state.projectLimit += 18;
+            renderDetailPanel();
+          });
+        }
+      }
+
+      function renderCompareRows(sector){
+        const maxBudget = Math.max(sector.budgetMillion2025, sector.budgetMillion2026, 1);
+        return `
+          <div class="compare-row">
+            <div>2025년</div>
+            <div class="compare-track"><div class="compare-fill" style="width:${(sector.budgetMillion2025 / maxBudget) * 100}%; background:linear-gradient(90deg, rgba(255,255,255,.38), rgba(125,211,252,.75));"></div></div>
+            <div>${formatBudget(sector.budgetMillion2025)}</div>
+          </div>
+          <div class="compare-row">
+            <div>2026년</div>
+            <div class="compare-track"><div class="compare-fill" style="width:${(sector.budgetMillion2026 / maxBudget) * 100}%; background:linear-gradient(90deg, rgba(192,132,252,.95), rgba(125,211,252,.95));"></div></div>
+            <div>${formatBudget(sector.budgetMillion2026)}</div>
+          </div>
+        `;
+      }
+
+      function renderMinistryRows(sector){
+        if (!sector.topMinistries.length){
+          return `<div class="empty">부처별 예산 데이터가 없습니다.</div>`;
+        }
+        const maxBudget = Math.max(...sector.topMinistries.map(item => item.budgetMillion2026), 1);
+        return `<div class="mini-bars">
+          ${sector.topMinistries.map(item => `
+            <div class="mini-bar-row">
+              <div class="mini-bar-label">${escapeHtml(item.name)}</div>
+              <div class="mini-bar-track"><div class="mini-bar-fill" style="width:${(item.budgetMillion2026 / maxBudget) * 100}%; background:linear-gradient(90deg, ${sector.color}, rgba(125,211,252,.95));"></div></div>
+              <div class="mini-bar-value">${formatBudget(item.budgetMillion2026)}</div>
+            </div>
+          `).join('')}
+        </div>`;
+      }
+
+      function renderDefaultRanking(){
+        const ranking = [...DATA.sectors].sort((a, b) => b.budgetMillion2026 - a.budgetMillion2026);
+        detailPanel.innerHTML = `
+          <section class="detail-header">
+            <div class="detail-badge">
+              <span class="dot" style="background:linear-gradient(135deg, var(--accent), var(--accent2))"></span>
+              시작 안내
+            </div>
+            <h2 class="detail-title">블록을 클릭하세요</h2>
+            <p class="detail-desc">우측 패널에는 선택한 분야의 예산, 기술수준, 세부 중점기술, 부처별 예산, 관련사업 목록이 표시됩니다. 초기 화면에서는 예산 기준 상위 분야를 보여줍니다.</p>
+          </section>
+
+          <section class="section">
+            <div class="section-head">
+              <div class="section-title">예산 상위 전략기술</div>
+              <div class="section-sub">2026년 기준</div>
+            </div>
+            <div class="rank-list">
+              ${ranking.map(sector => `
+                <button type="button" class="rank-item" data-rank-sector="${sector.id}" style="cursor:pointer">
+                  <span class="rank-badge" style="background:${sector.color}">${escapeHtml(sector.shortCode)}</span>
+                  <span>
+                    <div class="rank-name">${escapeHtml(sector.name)}</div>
+                    <div class="rank-meta">기술수준 ${formatPct(sector.techLevelPct)} · 사업 ${formatInt(sector.projectsCount)}개</div>
+                  </span>
+                  <span class="rank-meta" style="color:var(--text);font-weight:800">${formatSectorBudget(sector.budgetTrillion2026)}</span>
+                </button>
+              `).join('')}
+            </div>
+          </section>
+
+          <div class="footer-note">
+            분야 칩 또는 3D 블록을 누르면 바로 상세 정보로 이동합니다.
+          </div>
+        `;
+
+        detailPanel.querySelectorAll('[data-rank-sector]').forEach(button => {
+          button.addEventListener('click', () => {
+            selectSector(Number(button.getAttribute('data-rank-sector')));
+          });
+        });
+      }
+
+      function selectSector(id){
+        state.selectedSectorId = id;
+        state.focusFilter = 'ALL';
+        state.projectLimit = 18;
+        renderSectorChips();
+        renderMap();
+        renderDetailPanel();
+      }
+
+      function init(){
+        updateTopStats();
+        const defaultSector = maxBy(DATA.sectors, sector => sector.budgetMillion2026);
+        state.selectedSectorId = defaultSector.id;
+        renderSectorChips();
+        renderMap();
+        renderDetailPanel();
+      }
+
+      init();
+    })();
+  </script>
 </body>
 </html>
