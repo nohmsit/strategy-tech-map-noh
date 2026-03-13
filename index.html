@@ -1,0 +1,1977 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>국가전략기술 3D 맵</title>
+  <script src="data_3d_islands_v2.js"></script>
+  <script src="https://unpkg.com/three@0.162.0/build/three.min.js"></script>
+  <style>
+    :root{
+      --bg:#eaf4ff;
+      --bg2:#d7e9fb;
+      --ink:#10233a;
+      --muted:#55708d;
+      --card:rgba(255,255,255,.76);
+      --card-strong:rgba(255,255,255,.9);
+      --line:rgba(35,78,125,.12);
+      --line-strong:rgba(35,78,125,.22);
+      --shadow:0 20px 60px rgba(40,81,128,.14);
+      --accent:#2f7df6;
+      --accent2:#7e62ff;
+      --good:#18a97f;
+      --scene-bg:
+        radial-gradient(circle at 16% 10%, rgba(147,201,255,.45), transparent 28%),
+        radial-gradient(circle at 84% 10%, rgba(162,146,255,.24), transparent 26%),
+        linear-gradient(180deg,#edf7ff 0%,#d9ebfa 42%,#bed7ef 100%);
+      --map-shell:
+        linear-gradient(180deg, rgba(255,255,255,.38), rgba(255,255,255,.12)),
+        linear-gradient(180deg,#dff0ff 0%,#bbdaf5 52%,#8ab5e1 100%);
+      --panel-glow:rgba(255,255,255,.42);
+      --chip:rgba(25,61,101,.06);
+      --label-bg:rgba(255,255,255,.95);
+      --label-text:#132844;
+      --label-line:rgba(42,86,140,.15);
+    }
+    body.dark-mode{
+      --bg:#091422;
+      --bg2:#102033;
+      --ink:#f2f8ff;
+      --muted:#95abc4;
+      --card:rgba(10,18,30,.72);
+      --card-strong:rgba(10,18,30,.9);
+      --line:rgba(155,191,230,.12);
+      --line-strong:rgba(155,191,230,.22);
+      --shadow:0 24px 70px rgba(0,0,0,.32);
+      --accent:#8cc7ff;
+      --accent2:#b097ff;
+      --good:#4fd1b1;
+      --scene-bg:
+        radial-gradient(circle at 18% 10%, rgba(79,136,222,.25), transparent 26%),
+        radial-gradient(circle at 82% 12%, rgba(119,99,255,.18), transparent 26%),
+        linear-gradient(180deg,#091422 0%,#12243a 48%,#183658 100%);
+      --map-shell:
+        linear-gradient(180deg, rgba(255,255,255,.05), rgba(255,255,255,.02)),
+        linear-gradient(180deg,#183658 0%,#16314f 48%,#10243c 100%);
+      --panel-glow:rgba(255,255,255,.06);
+      --chip:rgba(255,255,255,.05);
+      --label-bg:rgba(255,255,255,.9);
+      --label-text:#102031;
+      --label-line:rgba(42,86,140,.2);
+    }
+    *{box-sizing:border-box}
+    html,body{margin:0;min-height:100%}
+    body{
+      font-family:"Noto Sans KR","Apple SD Gothic Neo","Malgun Gothic",sans-serif;
+      color:var(--ink);
+      background:var(--scene-bg);
+      background-attachment:fixed;
+    }
+    button,input{font:inherit}
+    .app{
+      width:min(1680px, calc(100vw - 20px));
+      margin:10px auto 18px;
+      display:flex;
+      flex-direction:column;
+      gap:12px;
+    }
+    .glass{
+      backdrop-filter:blur(16px);
+      background:linear-gradient(180deg, var(--panel-glow), rgba(255,255,255,.02)), var(--card);
+      border:1px solid var(--line);
+      box-shadow:var(--shadow);
+    }
+    .topbar{
+      border-radius:28px;
+      padding:16px 18px;
+      display:flex;
+      flex-direction:column;
+      gap:14px;
+    }
+    .top-row{
+      display:flex;
+      align-items:flex-start;
+      gap:14px;
+    }
+    .brand{flex:1;min-width:0}
+    .eyebrow{
+      font-size:11px;
+      font-weight:900;
+      letter-spacing:.24em;
+      color:var(--accent);
+      text-transform:uppercase;
+      margin-bottom:6px;
+    }
+    h1{
+      margin:0;
+      font-size:32px;
+      line-height:1.05;
+      letter-spacing:-.04em;
+    }
+    .subtitle{
+      margin-top:8px;
+      color:var(--muted);
+      font-size:13px;
+      line-height:1.5;
+    }
+    .actions{
+      display:flex;
+      flex-wrap:wrap;
+      justify-content:flex-end;
+      gap:8px;
+    }
+    .btn, .seg-btn{
+      height:42px;
+      border-radius:14px;
+      border:1px solid var(--line-strong);
+      background:linear-gradient(180deg, rgba(255,255,255,.12), rgba(255,255,255,.04)), var(--card-strong);
+      color:var(--ink);
+      font-weight:800;
+      padding:0 14px;
+      cursor:pointer;
+      transition:.18s ease;
+      white-space:nowrap;
+    }
+    .btn:hover,.seg-btn:hover{transform:translateY(-1px); border-color:var(--accent)}
+    .segmented{
+      display:inline-flex;
+      gap:6px;
+      padding:5px;
+      border-radius:18px;
+      border:1px solid var(--line);
+      background:rgba(255,255,255,.08);
+    }
+    .seg-btn{height:38px}
+    .seg-btn.active,.btn.active{
+      background:linear-gradient(180deg, rgba(255,255,255,.22), rgba(255,255,255,.08)), var(--accent);
+      color:#08111d;
+      border-color:transparent;
+    }
+    .summary-panel{
+      border-radius:22px;
+      overflow:hidden;
+    }
+    .summary-head{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:12px;
+      padding:12px 14px;
+      border-bottom:1px solid var(--line);
+    }
+    .summary-title{
+      font-size:12px;
+      font-weight:900;
+      color:var(--accent);
+      letter-spacing:.18em;
+      text-transform:uppercase;
+    }
+    .summary-panel.collapsed .summary-body{display:none}
+    .summary-body{
+      padding:14px;
+      display:grid;
+      grid-template-columns:repeat(5, minmax(0,1fr));
+      gap:10px;
+    }
+    .metric{
+      border:1px solid var(--line);
+      border-radius:18px;
+      padding:13px 14px;
+      background:var(--chip);
+      min-width:0;
+    }
+    .metric .k{
+      font-size:11px;
+      color:var(--muted);
+      font-weight:900;
+      letter-spacing:.06em;
+      text-transform:uppercase;
+      margin-bottom:8px;
+    }
+    .metric .v{
+      font-size:24px;
+      line-height:1;
+      letter-spacing:-.04em;
+      font-weight:900;
+      white-space:nowrap;
+    }
+    .metric .s{
+      margin-top:6px;
+      color:var(--muted);
+      font-size:11px;
+      line-height:1.45;
+    }
+    .layout{
+      display:grid;
+      grid-template-columns:minmax(0,1.38fr) minmax(370px,.9fr);
+      gap:12px;
+      align-items:start;
+    }
+    .panel{
+      border-radius:28px;
+      overflow:hidden;
+      min-width:0;
+    }
+    .panel-head{
+      display:flex;
+      justify-content:space-between;
+      align-items:flex-start;
+      gap:12px;
+      padding:14px 16px;
+      border-bottom:1px solid var(--line);
+    }
+    .panel-kicker{
+      font-size:11px;
+      font-weight:900;
+      letter-spacing:.18em;
+      color:var(--accent);
+      text-transform:uppercase;
+      margin-bottom:5px;
+    }
+    .panel-title{
+      font-size:24px;
+      font-weight:900;
+      line-height:1.08;
+      letter-spacing:-.03em;
+    }
+    .panel-sub{
+      margin-top:6px;
+      font-size:12px;
+      color:var(--muted);
+      line-height:1.45;
+    }
+    .map-wrap{padding:0}
+    .map-controls{
+      padding:12px 14px 0;
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:10px;
+      flex-wrap:wrap;
+    }
+    .scene-shell{
+      position:relative;
+      height:min(78vh, 850px);
+      min-height:520px;
+      margin:10px 12px 12px;
+      border-radius:24px;
+      overflow:hidden;
+      background:var(--map-shell);
+      border:1px solid rgba(255,255,255,.22);
+      box-shadow:inset 0 1px 0 rgba(255,255,255,.28);
+      cursor:grab;
+    }
+    .scene-shell.dragging{cursor:grabbing}
+    #sceneCanvas{
+      display:block;
+      width:100%;
+      height:100%;
+    }
+    .labels{
+      position:absolute;
+      inset:0;
+      pointer-events:none;
+      overflow:hidden;
+    }
+    .sector-label{
+      position:absolute;
+      min-width:108px;
+      max-width:160px;
+      transform:translate(-50%, -50%);
+      padding:10px 12px;
+      border-radius:18px;
+      border:1px solid var(--label-line);
+      background:var(--label-bg);
+      color:var(--label-text);
+      box-shadow:0 10px 30px rgba(22,48,82,.16);
+      text-align:left;
+      pointer-events:auto;
+      transition:.18s ease;
+      user-select:none;
+    }
+    .sector-label.active{
+      transform:translate(-50%, -50%) scale(1.03);
+      box-shadow:0 16px 36px rgba(22,48,82,.24);
+      border-color:rgba(56,102,188,.32);
+    }
+    .sector-label .name{
+      font-size:18px;
+      font-weight:900;
+      line-height:1.15;
+      margin-bottom:4px;
+      letter-spacing:-.02em;
+      word-break:keep-all;
+    }
+    .sector-label .meta{
+      font-size:12px;
+      color:#36516d;
+      line-height:1.35;
+      font-weight:700;
+    }
+    .hover-card{
+      position:absolute;
+      display:none;
+      min-width:170px;
+      max-width:240px;
+      padding:10px 12px;
+      border-radius:16px;
+      border:1px solid rgba(25,58,95,.16);
+      background:rgba(255,255,255,.96);
+      color:#12253c;
+      box-shadow:0 16px 38px rgba(19,45,79,.18);
+      pointer-events:none;
+      z-index:6;
+    }
+    .hover-card.visible{display:block}
+    .hover-card .t{
+      font-size:12px;
+      font-weight:900;
+      color:#4a6c8d;
+      margin-bottom:4px;
+      text-transform:uppercase;
+      letter-spacing:.08em;
+    }
+    .hover-card .n{
+      font-size:15px;
+      font-weight:900;
+      line-height:1.3;
+      margin-bottom:6px;
+      letter-spacing:-.02em;
+    }
+    .hover-card .m{
+      font-size:12px;
+      color:#3e5c7a;
+      line-height:1.45;
+    }
+    .map-bottom{
+      padding:0 14px 14px;
+      display:flex;
+      flex-direction:column;
+      gap:10px;
+    }
+    .selection-meta{
+      font-size:13px;
+      color:var(--muted);
+      font-weight:700;
+    }
+    .sector-strip{
+      display:flex;
+      gap:8px;
+      overflow:auto hidden;
+      padding-bottom:2px;
+      scrollbar-width:thin;
+    }
+    .sector-chip{
+      flex:0 0 auto;
+      border-radius:999px;
+      border:1px solid var(--line);
+      background:var(--chip);
+      padding:10px 12px;
+      font-size:12px;
+      font-weight:800;
+      color:var(--ink);
+      cursor:pointer;
+      display:flex;
+      align-items:center;
+      gap:8px;
+      white-space:nowrap;
+      transition:.16s ease;
+    }
+    .sector-chip.active{
+      border-color:transparent;
+      background:linear-gradient(180deg, rgba(255,255,255,.2), rgba(255,255,255,.08)), var(--accent);
+      color:#07111b;
+    }
+    .dot{
+      width:10px; height:10px; border-radius:50%;
+      flex:0 0 auto;
+      box-shadow:0 0 0 2px rgba(255,255,255,.55) inset;
+    }
+    .detail-panel{
+      max-height:min(78vh, 850px);
+      min-height:520px;
+      display:flex;
+      flex-direction:column;
+    }
+    .detail-body{
+      padding:14px 16px 18px;
+      overflow:auto;
+      overscroll-behavior:contain;
+      -webkit-overflow-scrolling:touch;
+      display:flex;
+      flex-direction:column;
+      gap:14px;
+    }
+    .hero-grid{
+      display:grid;
+      grid-template-columns:repeat(3, minmax(0,1fr));
+      gap:10px;
+    }
+    .hero-card{
+      border:1px solid var(--line);
+      border-radius:18px;
+      padding:13px 14px;
+      background:var(--chip);
+      min-width:0;
+    }
+    .hero-card .h-label{
+      font-size:11px;
+      color:var(--muted);
+      font-weight:900;
+      letter-spacing:.08em;
+      text-transform:uppercase;
+      margin-bottom:8px;
+    }
+    .hero-card .h-value{
+      font-size:24px;
+      line-height:1.05;
+      font-weight:900;
+      letter-spacing:-.04em;
+      word-break:keep-all;
+    }
+    .hero-card .h-meta{
+      margin-top:7px;
+      font-size:11px;
+      color:var(--muted);
+      line-height:1.4;
+    }
+    .section{
+      border:1px solid var(--line);
+      border-radius:22px;
+      padding:14px;
+      background:rgba(255,255,255,.03);
+    }
+    .section-title{
+      display:flex;
+      justify-content:space-between;
+      align-items:center;
+      gap:10px;
+      margin-bottom:10px;
+      font-size:15px;
+      font-weight:900;
+      letter-spacing:-.02em;
+    }
+    .section-sub{
+      font-size:11px;
+      color:var(--muted);
+      font-weight:800;
+    }
+    .note{
+      margin-bottom:10px;
+      padding:10px 12px;
+      border-radius:14px;
+      background:rgba(129,182,255,.12);
+      color:var(--muted);
+      font-size:12px;
+      line-height:1.5;
+    }
+    .tech-list, .dept-list, .project-list{
+      display:flex;
+      flex-direction:column;
+      gap:10px;
+    }
+    .tech-row{
+      width:100%;
+      text-align:left;
+      border:1px solid var(--line);
+      border-radius:16px;
+      background:linear-gradient(180deg, rgba(255,255,255,.1), rgba(255,255,255,.03)), var(--card-strong);
+      color:var(--ink);
+      padding:12px;
+      cursor:pointer;
+      transition:.16s ease;
+    }
+    .tech-row:hover{border-color:var(--accent)}
+    .tech-row.active{
+      border-color:transparent;
+      box-shadow:0 14px 28px rgba(49,105,186,.14);
+      background:linear-gradient(180deg, rgba(255,255,255,.22), rgba(255,255,255,.08)), rgba(113,163,255,.2);
+    }
+    .tech-row-top{
+      display:flex;
+      justify-content:space-between;
+      align-items:flex-start;
+      gap:10px;
+      margin-bottom:10px;
+    }
+    .tech-row-name{
+      font-size:14px;
+      font-weight:900;
+      line-height:1.4;
+      letter-spacing:-.01em;
+      word-break:keep-all;
+    }
+    .tech-row-level{
+      flex:0 0 auto;
+      text-align:right;
+      font-size:13px;
+      font-weight:900;
+      line-height:1.1;
+      white-space:nowrap;
+    }
+    .tech-row-level span{
+      display:block;
+      margin-bottom:4px;
+      font-size:10px;
+      color:var(--muted);
+      letter-spacing:.08em;
+      text-transform:uppercase;
+      font-weight:900;
+    }
+    .level-track, .bar-track{
+      width:100%;
+      height:10px;
+      border-radius:999px;
+      overflow:hidden;
+      background:rgba(19,49,86,.08);
+    }
+    .level-fill, .bar-fill{
+      height:100%;
+      border-radius:999px;
+      background:linear-gradient(90deg, var(--accent), var(--accent2));
+    }
+    .tech-row-meta, .bar-meta{
+      margin-top:8px;
+      display:flex;
+      flex-wrap:wrap;
+      gap:8px 14px;
+      font-size:11px;
+      color:var(--muted);
+      font-weight:700;
+    }
+    .dept-item{
+      border:1px solid var(--line);
+      border-radius:16px;
+      padding:12px;
+      background:var(--chip);
+    }
+    .dept-top{
+      display:flex;
+      justify-content:space-between;
+      gap:10px;
+      margin-bottom:8px;
+    }
+    .dept-name{font-weight:900}
+    .mono{font-variant-numeric:tabular-nums; font-weight:900}
+    .project-card{
+      border:1px solid var(--line);
+      border-radius:18px;
+      padding:12px;
+      background:var(--card-strong);
+    }
+    .project-head{
+      display:flex;
+      justify-content:space-between;
+      gap:10px;
+      align-items:flex-start;
+      margin-bottom:6px;
+    }
+    .project-program{
+      font-size:14px;
+      font-weight:900;
+      line-height:1.4;
+      letter-spacing:-.01em;
+    }
+    .project-ministry{
+      flex:0 0 auto;
+      border-radius:999px;
+      padding:5px 9px;
+      background:rgba(120,170,255,.14);
+      color:var(--accent);
+      font-size:11px;
+      font-weight:900;
+      white-space:nowrap;
+    }
+    .project-sub{
+      color:var(--muted);
+      font-size:12px;
+      line-height:1.5;
+      margin-bottom:10px;
+    }
+    .project-meta{
+      display:grid;
+      grid-template-columns:repeat(3, minmax(0,1fr));
+      gap:8px;
+    }
+    .project-pill{
+      border:1px solid var(--line);
+      border-radius:14px;
+      padding:8px 10px;
+      background:var(--chip);
+      min-width:0;
+    }
+    .project-pill .k{
+      font-size:10px;
+      color:var(--muted);
+      font-weight:900;
+      text-transform:uppercase;
+      margin-bottom:4px;
+    }
+    .project-pill .v{
+      font-size:12px;
+      font-weight:900;
+      line-height:1.3;
+      word-break:keep-all;
+    }
+    .empty{
+      padding:18px;
+      text-align:center;
+      color:var(--muted);
+      font-size:13px;
+    }
+    .loading{
+      position:absolute;
+      inset:0;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      z-index:10;
+      background:linear-gradient(180deg, rgba(255,255,255,.24), rgba(255,255,255,.08));
+      font-weight:900;
+      color:#1d3960;
+      letter-spacing:.04em;
+    }
+    .loading.hidden{display:none}
+    .error-box{
+      margin:10px 14px 0;
+      display:none;
+      padding:12px 14px;
+      border-radius:16px;
+      background:rgba(255,92,92,.12);
+      color:#9d1c1c;
+      border:1px solid rgba(255,92,92,.2);
+      font-weight:700;
+    }
+    .error-box.visible{display:block}
+    @media (max-width: 1180px){
+      .layout{grid-template-columns:1fr}
+      .detail-panel{max-height:none; min-height:0}
+      .scene-shell{height:min(72vh, 720px)}
+    }
+    @media (max-width: 900px){
+      .app{width:min(100vw - 10px, 100%); margin:6px auto 12px}
+      h1{font-size:26px}
+      .top-row{flex-direction:column}
+      .actions{justify-content:flex-start}
+      .summary-body{grid-template-columns:repeat(2, minmax(0,1fr))}
+      .hero-grid{grid-template-columns:1fr}
+      .project-meta{grid-template-columns:1fr}
+      .scene-shell{height:58vh; min-height:390px}
+      .detail-panel{max-height:none}
+      .panel-title{font-size:20px}
+      .sector-label{min-width:94px; max-width:132px; padding:8px 10px}
+      .sector-label .name{font-size:14px}
+      .sector-label .meta{font-size:11px}
+    }
+    @media (max-width: 560px){
+      .summary-body{grid-template-columns:1fr}
+      .panel-head{padding:12px 14px}
+      .map-controls{padding:10px 10px 0}
+      .scene-shell{margin:8px 10px 10px; border-radius:20px}
+      .map-bottom{padding:0 10px 12px}
+      .detail-body{padding:12px}
+      .sector-label{display:none}
+    }
+    ::-webkit-scrollbar{height:8px;width:8px}
+    ::-webkit-scrollbar-thumb{background:rgba(61,96,138,.28);border-radius:999px}
+    ::-webkit-scrollbar-track{background:transparent}
+  </style>
+</head>
+<body>
+  <div class="app">
+    <header class="topbar glass">
+      <div class="top-row">
+        <div class="brand">
+          <div class="eyebrow">Korea Strategic Tech</div>
+          <h1>국가전략기술 3D 맵</h1>
+          <div class="subtitle">3D 맵은 2026년 예산을 기준으로 구성하고, 2025년 예산은 비교값으로만 표시합니다.</div>
+        </div>
+        <div class="actions">
+          <div class="segmented" aria-label="보기 모드">
+            <button class="seg-btn active" id="modeSectorBtn" type="button">12대 분야</button>
+            <button class="seg-btn" id="modeDetailBtn" type="button">50대 상세</button>
+          </div>
+          <button class="btn" id="summaryToggleBtn" type="button">주요현황 숨기기</button>
+          <button class="btn" id="resetViewBtn" type="button">시점 초기화</button>
+          <button class="btn" id="themeToggleBtn" type="button">🌙 다크</button>
+        </div>
+      </div>
+
+      <section class="summary-panel glass" id="summaryPanel">
+        <div class="summary-head">
+          <div class="summary-title">주요현황</div>
+          <div style="font-size:12px;color:var(--muted);font-weight:800">총계 표시는 요청 기준값 고정</div>
+        </div>
+        <div class="summary-body">
+          <div class="metric">
+            <div class="k">2026 총예산</div>
+            <div class="v" id="sumBudget26">8.61조원</div>
+            <div class="s">3D 맵의 면적 기준</div>
+          </div>
+          <div class="metric">
+            <div class="k">2025 비교예산</div>
+            <div class="v" id="sumBudget25">6.52조원</div>
+            <div class="s">전년 비교값</div>
+          </div>
+          <div class="metric">
+            <div class="k">전략기술 분야</div>
+            <div class="v" id="sumSectorCount">12개</div>
+            <div class="s">전략기술 분야 수</div>
+          </div>
+          <div class="metric">
+            <div class="k">세부 중점기술</div>
+            <div class="v" id="sumTechCount">50개</div>
+            <div class="s">50대 상세 기술</div>
+          </div>
+          <div class="metric">
+            <div class="k">평균 기술수준</div>
+            <div class="v" id="sumTechLevel">-</div>
+            <div class="s">세부 중점기술 평균</div>
+          </div>
+        </div>
+      </section>
+    </header>
+
+    <main class="layout">
+      <section class="panel glass map-wrap">
+        <div class="panel-head">
+          <div>
+            <div class="panel-kicker">Strategic Map</div>
+            <div class="panel-title" id="mapTitle">12대 분야 3D 맵</div>
+            <div class="panel-sub" id="mapSubtitle">분야 플랫폼 면적은 2026 예산, 타워 높이는 기술수준입니다.</div>
+          </div>
+          <div style="font-size:12px;color:var(--muted);font-weight:800;line-height:1.5;text-align:right">드래그 회전 · 휠 확대/축소 · 클릭 상세보기</div>
+        </div>
+
+        <div class="error-box" id="errorBox"></div>
+
+        <div class="map-controls">
+          <div class="selection-meta" id="selectionMeta">현재 선택: 인공지능</div>
+          <div class="segmented" aria-label="모바일 상세">
+            <button class="seg-btn active" id="panelOpenBtn" type="button">상세패널</button>
+          </div>
+        </div>
+
+        <div class="scene-shell" id="sceneShell">
+          <div class="loading" id="loadingBox">3D 맵을 불러오는 중...</div>
+          <canvas id="sceneCanvas"></canvas>
+          <div class="labels" id="labelLayer"></div>
+          <div class="hover-card" id="hoverCard"></div>
+        </div>
+
+        <div class="map-bottom">
+          <div class="sector-strip" id="sectorStrip"></div>
+        </div>
+      </section>
+
+      <aside class="panel glass detail-panel" id="detailPanel">
+        <div class="panel-head">
+          <div>
+            <div class="panel-kicker" id="detailKicker">전략기술 분야</div>
+            <div class="panel-title" id="detailTitle">인공지능</div>
+            <div class="panel-sub" id="detailSubtitle">세부 중점기술 4개</div>
+          </div>
+        </div>
+        <div class="detail-body" id="detailBody"></div>
+      </aside>
+    </main>
+  </div>
+
+  <script>
+    (function(){
+      const DATA = window.STRATEGIC_TECH_DATA;
+      if (!DATA || !Array.isArray(DATA.sectors)) {
+        document.body.innerHTML = '<div style="padding:24px;font-family:sans-serif">data.js를 읽지 못했습니다.</div>';
+        return;
+      }
+
+      const STORAGE_THEME = 'strategic-map-theme-v2';
+      const STORAGE_SUMMARY = 'strategic-map-summary-v2';
+      const STORAGE_PANEL = 'strategic-map-panel-v2';
+
+      const refs = {
+        modeSectorBtn: document.getElementById('modeSectorBtn'),
+        modeDetailBtn: document.getElementById('modeDetailBtn'),
+        themeToggleBtn: document.getElementById('themeToggleBtn'),
+        summaryToggleBtn: document.getElementById('summaryToggleBtn'),
+        resetViewBtn: document.getElementById('resetViewBtn'),
+        panelOpenBtn: document.getElementById('panelOpenBtn'),
+        summaryPanel: document.getElementById('summaryPanel'),
+        mapTitle: document.getElementById('mapTitle'),
+        mapSubtitle: document.getElementById('mapSubtitle'),
+        selectionMeta: document.getElementById('selectionMeta'),
+        sceneShell: document.getElementById('sceneShell'),
+        canvas: document.getElementById('sceneCanvas'),
+        labelLayer: document.getElementById('labelLayer'),
+        hoverCard: document.getElementById('hoverCard'),
+        loadingBox: document.getElementById('loadingBox'),
+        errorBox: document.getElementById('errorBox'),
+        sectorStrip: document.getElementById('sectorStrip'),
+        detailPanel: document.getElementById('detailPanel'),
+        detailKicker: document.getElementById('detailKicker'),
+        detailTitle: document.getElementById('detailTitle'),
+        detailSubtitle: document.getElementById('detailSubtitle'),
+        detailBody: document.getElementById('detailBody'),
+        sumBudget26: document.getElementById('sumBudget26'),
+        sumBudget25: document.getElementById('sumBudget25'),
+        sumSectorCount: document.getElementById('sumSectorCount'),
+        sumTechCount: document.getElementById('sumTechCount'),
+        sumTechLevel: document.getElementById('sumTechLevel'),
+      };
+
+      const state = {
+        mode: 'sector',
+        selectedSectorId: DATA.sectors[0] ? DATA.sectors[0].id : null,
+        selectedTechKey: null,
+        theme: 'light',
+        summaryOpen: window.innerWidth > 900,
+        panelOpen: window.innerWidth > 1180,
+        hoverKey: null,
+        drag: { active: false, pointerId: null, startX: 0, startY: 0, yaw: 0, pitch: 0 },
+        orbit: {
+          yaw: -0.55,
+          pitch: 0.82,
+          radius: 160,
+          target: null,
+          targetGoal: null,
+        },
+        sceneReady: false,
+      };
+
+      const colorCache = new Map();
+      const sectorMap = new Map(DATA.sectors.map(s => [s.id, s]));
+      const techMap = new Map();
+      const interactive = [];
+      const labelNodes = new Map();
+
+      let scene, camera, renderer, raycaster, pointerNdc, worldGroup, islandGroup, selectionGroup;
+      let ambientLight, hemiLight, keyLight, fillLight, floorMesh, oceanMesh, skylineGroup;
+      let rafId = 0;
+
+      function init(){
+        normalizeData();
+        state.theme = getPreferredTheme();
+        state.summaryOpen = getStoredBool(STORAGE_SUMMARY, window.innerWidth > 900);
+        state.panelOpen = getStoredBool(STORAGE_PANEL, window.innerWidth > 1180);
+
+        applyTheme(state.theme, false);
+        applySummaryVisibility();
+        applyPanelVisibility();
+        renderSummary();
+        buildSectorStrip();
+        bindEvents();
+        updateModeButtons();
+        updateMapTitle();
+        updateSelectionMeta();
+        renderPanel();
+
+        if (!window.THREE) {
+          showError('Three.js를 불러오지 못해 3D 맵을 표시할 수 없습니다. 네트워크 환경을 확인해주세요.');
+          refs.loadingBox.classList.add('hidden');
+          return;
+        }
+
+        try {
+          initThree();
+          applyTheme(state.theme, false);
+          rebuildScene();
+          focusSelection();
+          onResize();
+          refs.loadingBox.classList.add('hidden');
+          state.sceneReady = true;
+          animate();
+        } catch (err) {
+          console.error(err);
+          showError('3D 맵 초기화 중 오류가 발생했습니다.');
+          refs.loadingBox.classList.add('hidden');
+        }
+      }
+
+      function normalizeData(){
+        const aliases = new Map([
+          ['자율주행 시스템', '자율주행시스템'],
+          ['자율주행시스템', '자율주행시스템'],
+          ['오픈랜', '오픈랜(Open-RAN)'],
+          ['오픈랜(open-ran)', '오픈랜(Open-RAN)'],
+          ['오픈랜(open ran)', '오픈랜(Open-RAN)'],
+          ['오픈랜(Open-RAN)', '오픈랜(Open-RAN)'],
+          ['소형 모듈원자로[smr]', '소형모듈원자로(SMR)'],
+          ['소형모듈원자로(smr)', '소형모듈원자로(SMR)'],
+          ['소형 모듈원자로(smr)', '소형모듈원자로(SMR)'],
+          ['1.리튬이온 이차전지 및 핵심소재', '리튬이온전지 및 핵심소재'],
+          ['리튬이온 이차전지 및 핵심소재', '리튬이온전지 및 핵심소재'],
+          ['리튬이온전지 및 핵심소재', '리튬이온전지 및 핵심소재'],
+        ]);
+
+        const allDetailBudgets = [];
+        DATA.sectors.forEach((sector, index) => {
+          sector.budgetDiffTrillion = round1((sector.budgetTrillion2026 || 0) - (sector.budgetTrillion2025 || 0));
+          sector.projects = Array.isArray(sector.projects) ? sector.projects : [];
+          sector.departmentBudgets = Array.isArray(sector.departmentBudgets) ? sector.departmentBudgets : [];
+          sector.ministries = aggregateMinistries(sector.projects);
+
+          const localTechMap = new Map();
+          sector.detailTechs = Array.isArray(sector.detailTechs) ? sector.detailTechs : [];
+          sector.detailTechs.forEach(tech => {
+            tech.name = canonicalTechName(tech.name, aliases);
+            tech.key = sector.id + '|' + tech.name;
+            tech.projects = [];
+            tech.ministries = [];
+            tech.budgetDiffMillion = round0((tech.budgetMillion2026 || 0) - (tech.budgetMillion2025 || 0));
+            tech.projectCount = Number(tech.projectCount || 0);
+            tech.mapped = !!tech.mapped;
+            localTechMap.set(normalizeKey(tech.name), tech);
+            techMap.set(tech.key, tech);
+            allDetailBudgets.push(tech.budgetMillion2026 || 0);
+          });
+
+          sector.projects.forEach(project => {
+            const candidate = canonicalTechName(project.detailTech || project.focusTechRaw || '', aliases);
+            project._canonicalTech = candidate;
+            const tech = localTechMap.get(normalizeKey(candidate));
+            if (tech) {
+              tech.projects.push(project);
+            }
+          });
+
+          sector.detailTechs.forEach(tech => {
+            if (tech.projects.length) {
+              tech.projectCount = tech.projects.length;
+              tech.ministries = aggregateMinistries(tech.projects);
+            }
+          });
+
+          sector.mappingNote = sector.hasFocusTechMapping
+            ? `세부 중점기술 직접 매핑률 ${Number(sector.mappingCoveragePct || 0).toFixed(1)}%`
+            : '중점기술별 직접 매핑이 없어, 분야 단위 사업을 함께 표시합니다.';
+
+          sector._order = index;
+        });
+
+        const sectorBudgets = DATA.sectors.map(s => s.budgetTrillion2026 || 0);
+        const minSectorBudget = Math.min.apply(null, sectorBudgets);
+        const maxSectorBudget = Math.max.apply(null, sectorBudgets);
+        const maxDetailBudget = Math.max(1, ...allDetailBudgets);
+
+        const densePositions = [
+          [-44, -26], [-16, -30], [13, -29], [41, -24],
+          [-49, 1], [-19, -1], [11, 0], [41, 4],
+          [-42, 27], [-12, 30], [17, 29], [45, 24]
+        ];
+
+        const gridCols = 4;
+        const gridGapX = 58;
+        const gridGapZ = 48;
+
+        DATA.sectors.forEach((sector, index) => {
+          const r = remap(sector.budgetTrillion2026 || 0, minSectorBudget, maxSectorBudget, 8.4, 18);
+          sector._radius = r;
+          sector._platformHeight = 4.8;
+          sector._heroHeight = 10 + Math.max(2, sector.techLevelPct || 0) * 0.72;
+
+          const dense = densePositions[index] || [0, 0];
+          sector._sectorPos = { x: dense[0], y: 0, z: dense[1] };
+
+          const col = index % gridCols;
+          const row = Math.floor(index / gridCols);
+          sector._detailPos = {
+            x: (col - (gridCols - 1) / 2) * gridGapX + (row % 2 ? 6 : 0),
+            y: 0,
+            z: (row - 1) * gridGapZ
+          };
+
+          const sorted = sector.detailTechs.slice().sort((a, b) =>
+            (b.budgetMillion2026 || 0) - (a.budgetMillion2026 || 0) || (b.techLevelPct || 0) - (a.techLevelPct || 0)
+          );
+
+          sorted.forEach((tech, techIndex) => {
+            const p = spiralPoint(techIndex, sorted.length, r * 0.58, sector.id * 3.17);
+            const size = 2.6 + remap(Math.sqrt(tech.budgetMillion2026 || 0), 0, Math.sqrt(maxDetailBudget), 0, 4.6);
+            const height = 7 + Math.max(0, tech.techLevelPct || 0) * 0.62;
+            tech._local = { x: p.x, z: p.z };
+            tech._size = size;
+            tech._height = height;
+            tech._selectedHeight = height + 2;
+          });
+        });
+      }
+
+      function initThree(){
+        const THREE = window.THREE;
+        renderer = new THREE.WebGLRenderer({
+          canvas: refs.canvas,
+          antialias: true,
+          alpha: true,
+          powerPreference: 'high-performance'
+        });
+        renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 1.5));
+        renderer.shadowMap.enabled = true;
+        renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+
+        scene = new THREE.Scene();
+        camera = new THREE.PerspectiveCamera(44, 1, 0.1, 1000);
+        state.orbit.target = new THREE.Vector3(0, 12, 0);
+        state.orbit.targetGoal = new THREE.Vector3(0, 12, 0);
+
+        ambientLight = new THREE.AmbientLight(0xffffff, 1.02);
+        hemiLight = new THREE.HemisphereLight(0xffffff, 0x7da5c9, 1.05);
+        keyLight = new THREE.DirectionalLight(0xffffff, 1.48);
+        keyLight.position.set(90, 120, 52);
+        keyLight.castShadow = true;
+        keyLight.shadow.mapSize.width = 1024;
+        keyLight.shadow.mapSize.height = 1024;
+        keyLight.shadow.camera.near = 1;
+        keyLight.shadow.camera.far = 400;
+        keyLight.shadow.camera.left = -120;
+        keyLight.shadow.camera.right = 120;
+        keyLight.shadow.camera.top = 120;
+        keyLight.shadow.camera.bottom = -120;
+
+        fillLight = new THREE.DirectionalLight(0x9dd1ff, 0.56);
+        fillLight.position.set(-80, 42, -44);
+
+        scene.add(ambientLight, hemiLight, keyLight, fillLight);
+
+        oceanMesh = new THREE.Mesh(
+          new THREE.PlaneGeometry(360, 240),
+          new THREE.MeshPhongMaterial({
+            color: 0x95c0e4,
+            shininess: 90,
+            specular: 0xffffff,
+            transparent: true,
+            opacity: 0.95
+          })
+        );
+        oceanMesh.rotation.x = -Math.PI / 2;
+        oceanMesh.position.y = -0.02;
+        scene.add(oceanMesh);
+
+        floorMesh = new THREE.Mesh(
+          new THREE.CircleGeometry(138, 64),
+          new THREE.MeshBasicMaterial({
+            color: 0xffffff,
+            transparent: true,
+            opacity: 0.07
+          })
+        );
+        floorMesh.rotation.x = -Math.PI / 2;
+        floorMesh.position.y = 0.03;
+        scene.add(floorMesh);
+
+        skylineGroup = new THREE.Group();
+        buildSkyline();
+        scene.add(skylineGroup);
+
+        worldGroup = new THREE.Group();
+        islandGroup = new THREE.Group();
+        selectionGroup = new THREE.Group();
+        worldGroup.add(islandGroup);
+        worldGroup.add(selectionGroup);
+        scene.add(worldGroup);
+
+        raycaster = new THREE.Raycaster();
+        pointerNdc = new THREE.Vector2();
+      }
+
+      function buildSkyline(){
+        const THREE = window.THREE;
+        skylineGroup.clear();
+        const skylineMat = new THREE.MeshPhongMaterial({
+          color: 0xb8d2ea,
+          transparent: true,
+          opacity: 0.3,
+          shininess: 20
+        });
+        const positions = [];
+        for (let i = 0; i < 26; i++) {
+          const x = -160 + i * 12.8;
+          positions.push({ x, z: -82 + Math.sin(i * 0.65) * 4, h: 8 + (i % 7) * 5 });
+          positions.push({ x, z: 82 + Math.cos(i * 0.72) * 4, h: 8 + ((i + 3) % 7) * 5 });
+        }
+        positions.forEach((p, idx) => {
+          const w = 3 + (idx % 4) * 1.2;
+          const d = 3 + ((idx + 1) % 4) * 1.1;
+          const mesh = new THREE.Mesh(new THREE.BoxGeometry(w, p.h, d), skylineMat.clone());
+          mesh.position.set(p.x, p.h / 2, p.z);
+          skylineGroup.add(mesh);
+        });
+      }
+
+      function rebuildScene(){
+        if (!window.THREE || !islandGroup) return;
+        interactive.length = 0;
+        refs.labelLayer.innerHTML = '';
+        labelNodes.clear();
+        clearGroup(islandGroup);
+        clearGroup(selectionGroup);
+
+        const THREE = window.THREE;
+        DATA.sectors.forEach(sector => {
+          const pos = state.mode === 'sector' ? sector._sectorPos : sector._detailPos;
+          const island = new THREE.Group();
+          island.position.set(pos.x, 0, pos.z);
+          island.userData = { type: 'sector', sectorId: sector.id };
+          islandGroup.add(island);
+
+          const baseColor = color(sector.color);
+          const radius = sector._radius * (state.mode === 'sector' ? 1.0 : 0.98);
+          const h = sector._platformHeight;
+
+          const shadow = new THREE.Mesh(
+            new THREE.CircleGeometry(radius * 1.2, 48),
+            new THREE.MeshBasicMaterial({ color: 0x2c5f94, transparent: true, opacity: 0.16 })
+          );
+          shadow.rotation.x = -Math.PI / 2;
+          shadow.position.y = 0.05;
+          island.add(shadow);
+
+          const base = new THREE.Mesh(
+            new THREE.CylinderGeometry(radius, radius * 0.93, h, 48),
+            new THREE.MeshPhongMaterial({
+              color: shade(baseColor, -0.24),
+              shininess: 55,
+              specular: 0xffffff
+            })
+          );
+          base.position.y = h / 2;
+          base.castShadow = true;
+          base.receiveShadow = true;
+          base.userData = { type: 'sector', sectorId: sector.id };
+          island.add(base);
+          interactive.push(base);
+
+          const cap = new THREE.Mesh(
+            new THREE.CylinderGeometry(radius * 0.97, radius * 0.985, 1.15, 48),
+            new THREE.MeshPhongMaterial({
+              color: shade(baseColor, 0.18),
+              shininess: 70,
+              specular: 0xffffff
+            })
+          );
+          cap.position.y = h + 0.58;
+          cap.receiveShadow = true;
+          cap.userData = { type: 'sector', sectorId: sector.id };
+          island.add(cap);
+          interactive.push(cap);
+
+          const rim = new THREE.Mesh(
+            new THREE.TorusGeometry(radius * 0.82, 0.42, 14, 48),
+            new THREE.MeshBasicMaterial({
+              color: shade(baseColor, 0.42),
+              transparent: true,
+              opacity: 0.36
+            })
+          );
+          rim.rotation.x = Math.PI / 2;
+          rim.position.y = h + 0.9;
+          island.add(rim);
+
+          const heroDetails = sector.detailTechs.slice().sort((a, b) => (b.techLevelPct || 0) - (a.techLevelPct || 0));
+
+          if (state.mode === 'sector') {
+            const hero = createTowerMesh(
+              sector,
+              null,
+              radius * 0.34,
+              sector._heroHeight,
+              0,
+              0,
+              true
+            );
+            hero.position.y = h + hero.geometry.parameters.height / 2;
+            island.add(hero.mesh);
+            interactive.push(hero.mesh);
+
+            heroDetails.slice(0, Math.min(4, sector.detailTechs.length)).forEach((detail, idx) => {
+              const angle = idx / Math.max(1, Math.min(4, heroDetails.length)) * Math.PI * 2 + 0.6;
+              const dist = radius * 0.46;
+              const miniHeight = 6 + (detail.techLevelPct || 0) * 0.26;
+              const miniSize = clamp(radius * 0.12, 2.6, 4.6);
+              const mini = createTowerMesh(
+                sector,
+                detail,
+                miniSize,
+                miniHeight,
+                Math.cos(angle) * dist,
+                Math.sin(angle) * dist,
+                false
+              );
+              mini.position.y = h + mini.geometry.parameters.height / 2;
+              island.add(mini.mesh);
+              interactive.push(mini.mesh);
+            });
+          } else {
+            sector.detailTechs.forEach(detail => {
+              const tower = createTowerMesh(
+                sector,
+                detail,
+                detail._size,
+                detail._height,
+                detail._local.x,
+                detail._local.z,
+                false
+              );
+              tower.position.y = h + tower.geometry.parameters.height / 2;
+              island.add(tower.mesh);
+              interactive.push(tower.mesh);
+            });
+          }
+
+          const label = document.createElement('button');
+          label.type = 'button';
+          label.className = 'sector-label';
+          label.innerHTML = `
+            <div class="name">${escapeHtml(sector.name)}</div>
+            <div class="meta">2026 ${formatBudgetTrillion(sector.budgetTrillion2026)} · ${state.mode === 'detail' ? `세부 ${sector.detailTechCount}개` : `기술수준 ${formatPercent(sector.techLevelPct)}`}</div>
+          `;
+          label.addEventListener('click', () => selectSector(sector.id));
+          refs.labelLayer.appendChild(label);
+          labelNodes.set(sector.id, { el: label, group: island, sector });
+        });
+
+        updateSelectionVisual();
+        updateModeButtons();
+        updateMapTitle();
+        updateSelectionMeta();
+      }
+
+      function createTowerMesh(sector, detail, size, height, x, z, isHero){
+        const THREE = window.THREE;
+        const towerHeight = Math.max(height, 4.5);
+        const materials = towerMaterials(sector.color, isHero ? 1.12 : 0.98);
+        const geo = new THREE.BoxGeometry(size, towerHeight, size);
+        const mesh = new THREE.Mesh(geo, materials);
+        mesh.castShadow = true;
+        mesh.receiveShadow = true;
+        mesh.position.set(x, 0, z);
+        mesh.userData = detail
+          ? { type: 'tech', sectorId: sector.id, techName: detail.name }
+          : { type: 'sector-hero', sectorId: sector.id };
+        const edge = new THREE.LineSegments(
+          new THREE.EdgesGeometry(geo),
+          new THREE.LineBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.22 })
+        );
+        mesh.add(edge);
+        mesh.geometry.computeBoundingBox();
+        return { mesh, geometry: geo };
+      }
+
+      function towerMaterials(hex, scale){
+        const THREE = window.THREE;
+        const base = color(hex);
+        const sideA = new THREE.MeshPhongMaterial({
+          color: shade(base, -0.06),
+          emissive: shade(base, -0.32),
+          emissiveIntensity: 0.15 * scale,
+          shininess: 55
+        });
+        const sideB = new THREE.MeshPhongMaterial({
+          color: shade(base, -0.22),
+          emissive: shade(base, -0.38),
+          emissiveIntensity: 0.1 * scale,
+          shininess: 48
+        });
+        const top = new THREE.MeshPhongMaterial({
+          color: shade(base, 0.32),
+          emissive: shade(base, 0.08),
+          emissiveIntensity: 0.12 * scale,
+          shininess: 90
+        });
+        return [sideA, sideB, top, sideB, sideA, sideA];
+      }
+
+      function clearGroup(group){
+        while (group.children.length) {
+          const child = group.children.pop();
+          disposeObject(child);
+        }
+      }
+
+      function disposeObject(obj){
+        if (!obj) return;
+        if (obj.geometry) obj.geometry.dispose();
+        if (obj.material) {
+          if (Array.isArray(obj.material)) obj.material.forEach(m => m && m.dispose && m.dispose());
+          else obj.material.dispose && obj.material.dispose();
+        }
+        while (obj.children && obj.children.length) {
+          disposeObject(obj.children.pop());
+        }
+      }
+
+      function updateSelectionVisual(){
+        if (!window.THREE || !selectionGroup) return;
+        clearGroup(selectionGroup);
+        const THREE = window.THREE;
+        const selection = getSelection();
+        if (!selection) return;
+        const sector = getSector(selection.sectorId);
+        if (!sector) return;
+        const pos = state.mode === 'sector' ? sector._sectorPos : sector._detailPos;
+
+        const halo = new THREE.Mesh(
+          new THREE.TorusGeometry(sector._radius * 1.02, 0.55, 12, 60),
+          new THREE.MeshBasicMaterial({
+            color: state.theme === 'light' ? 0x1f65e8 : 0xffffff,
+            transparent: true,
+            opacity: 0.55
+          })
+        );
+        halo.rotation.x = Math.PI / 2;
+        halo.position.set(pos.x, sector._platformHeight + 1.2, pos.z);
+        selectionGroup.add(halo);
+
+        if (selection.type === 'tech' && state.mode === 'detail') {
+          const tech = getTech(sector, selection.techName);
+          if (tech) {
+            const outlineGeo = new THREE.BoxGeometry(tech._size + 1.1, tech._height + 1.5, tech._size + 1.1);
+            const outline = new THREE.LineSegments(
+              new THREE.EdgesGeometry(outlineGeo),
+              new THREE.LineBasicMaterial({
+                color: state.theme === 'light' ? 0x0b52df : 0xffffff,
+                transparent: true,
+                opacity: 0.72
+              })
+            );
+            outline.position.set(
+              pos.x + tech._local.x,
+              sector._platformHeight + (tech._height / 2),
+              pos.z + tech._local.z
+            );
+            selectionGroup.add(outline);
+          }
+        }
+
+        labelNodes.forEach((entry, sectorId) => {
+          entry.el.classList.toggle('active', sectorId === sector.id);
+        });
+      }
+
+      function animate(){
+        rafId = requestAnimationFrame(animate);
+        if (!renderer || !scene || !camera) return;
+        updateCamera();
+        renderer.render(scene, camera);
+        updateLabels();
+      }
+
+      function updateCamera(){
+        if (!camera) return;
+        const tgt = state.orbit.target;
+        const goal = state.orbit.targetGoal;
+        if (tgt && goal) tgt.lerp(goal, 0.08);
+        const radius = state.orbit.radius;
+        const yaw = state.orbit.yaw;
+        const pitch = state.orbit.pitch;
+        const cp = Math.cos(pitch);
+        const sp = Math.sin(pitch);
+        camera.position.set(
+          (tgt ? tgt.x : 0) + Math.cos(yaw) * cp * radius,
+          (tgt ? tgt.y : 12) + sp * radius,
+          (tgt ? tgt.z : 0) + Math.sin(yaw) * cp * radius
+        );
+        camera.lookAt(tgt || { x:0, y:12, z:0 });
+      }
+
+      function updateLabels(){
+        if (!camera) return;
+        const width = refs.sceneShell.clientWidth;
+        const height = refs.sceneShell.clientHeight;
+        labelNodes.forEach((entry, sectorId) => {
+          const v = new window.THREE.Vector3();
+          const sector = entry.sector;
+          const pos = state.mode === 'sector' ? sector._sectorPos : sector._detailPos;
+          v.set(pos.x, sector._platformHeight + (state.mode === 'sector' ? sector._heroHeight + 12 : 12), pos.z);
+          v.project(camera);
+          const visible = v.z < 1 && v.z > -1;
+          const x = (v.x * 0.5 + 0.5) * width;
+          const y = (-v.y * 0.5 + 0.5) * height;
+          entry.el.style.display = visible ? 'block' : 'none';
+          entry.el.style.left = x.toFixed(1) + 'px';
+          entry.el.style.top = y.toFixed(1) + 'px';
+        });
+      }
+
+      function onResize(){
+        if (!renderer || !camera) return;
+        const w = refs.sceneShell.clientWidth;
+        const h = refs.sceneShell.clientHeight;
+        camera.aspect = w / h;
+        camera.updateProjectionMatrix();
+        renderer.setSize(w, h, false);
+      }
+
+      function bindEvents(){
+        refs.modeSectorBtn.addEventListener('click', () => setMode('sector'));
+        refs.modeDetailBtn.addEventListener('click', () => setMode('detail'));
+        refs.resetViewBtn.addEventListener('click', resetView);
+        refs.themeToggleBtn.addEventListener('click', () => applyTheme(state.theme === 'light' ? 'dark' : 'light', true));
+        refs.summaryToggleBtn.addEventListener('click', () => {
+          state.summaryOpen = !state.summaryOpen;
+          localStorage.setItem(STORAGE_SUMMARY, String(state.summaryOpen));
+          applySummaryVisibility();
+        });
+        refs.panelOpenBtn.addEventListener('click', () => {
+          state.panelOpen = !state.panelOpen;
+          localStorage.setItem(STORAGE_PANEL, String(state.panelOpen));
+          applyPanelVisibility();
+        });
+
+        window.addEventListener('resize', () => {
+          if (window.innerWidth <= 900 && state.summaryOpen && !getStoredRaw(STORAGE_SUMMARY)) {
+            state.summaryOpen = false;
+            applySummaryVisibility();
+          }
+          onResize();
+        });
+
+        const shell = refs.sceneShell;
+        shell.addEventListener('pointerdown', onPointerDown);
+        shell.addEventListener('pointermove', onPointerMove);
+        window.addEventListener('pointerup', onPointerUp);
+        shell.addEventListener('pointerleave', () => {
+          if (!state.drag.active) hideHover();
+        });
+        shell.addEventListener('wheel', onWheel, { passive: false });
+      }
+
+      function onPointerDown(event){
+        state.drag.active = true;
+        state.drag.pointerId = event.pointerId;
+        state.drag.startX = event.clientX;
+        state.drag.startY = event.clientY;
+        state.drag.yaw = state.orbit.yaw;
+        state.drag.pitch = state.orbit.pitch;
+        refs.sceneShell.classList.add('dragging');
+        refs.sceneShell.setPointerCapture && refs.sceneShell.setPointerCapture(event.pointerId);
+      }
+
+      function onPointerMove(event){
+        const rect = refs.canvas.getBoundingClientRect();
+        pointerNdc.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
+        pointerNdc.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
+
+        if (state.drag.active && state.drag.pointerId === event.pointerId) {
+          const dx = event.clientX - state.drag.startX;
+          const dy = event.clientY - state.drag.startY;
+          state.orbit.yaw = state.drag.yaw - dx * 0.008;
+          state.orbit.pitch = clamp(state.drag.pitch - dy * 0.006, 0.38, 1.22);
+          updateHover(event);
+          return;
+        }
+        updateHover(event);
+      }
+
+      function onPointerUp(event){
+        if (!state.drag.active || state.drag.pointerId !== event.pointerId) return;
+        refs.sceneShell.classList.remove('dragging');
+        const moved = Math.hypot(event.clientX - state.drag.startX, event.clientY - state.drag.startY);
+        state.drag.active = false;
+        if (moved < 6) handlePick(event);
+      }
+
+      function onWheel(event){
+        event.preventDefault();
+        state.orbit.radius = clamp(state.orbit.radius + (event.deltaY > 0 ? 8 : -8), state.mode === 'detail' ? 150 : 120, state.mode === 'detail' ? 260 : 210);
+      }
+
+      function updateHover(event){
+        const hit = getIntersection();
+        if (!hit) {
+          hideHover();
+          return;
+        }
+        const data = hit.object.userData || {};
+        const sector = getSector(data.sectorId);
+        if (!sector) {
+          hideHover();
+          return;
+        }
+        const tech = data.type === 'tech' ? getTech(sector, data.techName) : null;
+        refs.hoverCard.classList.add('visible');
+        refs.hoverCard.innerHTML = `
+          <div class="t">${tech ? '세부 중점기술' : '전략기술 분야'}</div>
+          <div class="n">${escapeHtml(tech ? tech.name : sector.name)}</div>
+          <div class="m">
+            기술수준 ${formatPercent(tech ? tech.techLevelPct : sector.techLevelPct)}<br>
+            2026 ${tech ? formatBudgetMixed(tech.budgetMillion2026) : formatBudgetTrillion(sector.budgetTrillion2026)}<br>
+            2025 ${tech ? formatBudgetMixed(tech.budgetMillion2025) : formatBudgetTrillion(sector.budgetTrillion2025)}
+          </div>
+        `;
+        const shellRect = refs.sceneShell.getBoundingClientRect();
+        refs.hoverCard.style.left = Math.min(shellRect.width - 250, Math.max(12, event.clientX - shellRect.left + 14)) + 'px';
+        refs.hoverCard.style.top = Math.min(shellRect.height - 120, Math.max(12, event.clientY - shellRect.top + 14)) + 'px';
+      }
+
+      function hideHover(){
+        refs.hoverCard.classList.remove('visible');
+      }
+
+      function getIntersection(){
+        if (!raycaster || !camera || !interactive.length) return null;
+        raycaster.setFromCamera(pointerNdc, camera);
+        const hits = raycaster.intersectObjects(interactive, false);
+        return hits.length ? hits[0] : null;
+      }
+
+      function handlePick(){
+        const hit = getIntersection();
+        if (!hit) return;
+        const data = hit.object.userData || {};
+        if (data.type === 'tech') {
+          selectTech(data.sectorId, data.techName);
+        } else {
+          selectSector(data.sectorId);
+        }
+      }
+
+      function setMode(mode){
+        const next = mode === 'detail' ? 'detail' : 'sector';
+        if (state.mode === next) return;
+        state.mode = next;
+        state.selectedTechKey = null;
+        if (next === 'detail') {
+          state.orbit.radius = clamp(state.orbit.radius + 20, 150, 260);
+        } else {
+          state.orbit.radius = clamp(state.orbit.radius - 20, 120, 210);
+        }
+        rebuildScene();
+        renderPanel();
+        focusSelection();
+      }
+
+      function selectSector(sectorId){
+        state.selectedSectorId = sectorId;
+        state.selectedTechKey = null;
+        updateSelectionVisual();
+        updateSelectionMeta();
+        renderPanel();
+        focusSelection();
+      }
+
+      function selectTech(sectorId, techName){
+        state.mode = 'detail';
+        state.selectedSectorId = sectorId;
+        state.selectedTechKey = sectorId + '|' + techName;
+        updateModeButtons();
+        updateMapTitle();
+        if (state.sceneReady) rebuildScene();
+        updateSelectionVisual();
+        updateSelectionMeta();
+        renderPanel();
+        focusSelection();
+      }
+
+      function focusSelection(){
+        const sector = getSector(state.selectedSectorId);
+        if (!sector || !state.orbit.targetGoal) return;
+        const pos = state.mode === 'sector' ? sector._sectorPos : sector._detailPos;
+        state.orbit.targetGoal.set(pos.x, 10, pos.z);
+      }
+
+      function resetView(){
+        state.orbit.yaw = state.mode === 'sector' ? -0.55 : -0.65;
+        state.orbit.pitch = state.mode === 'sector' ? 0.82 : 0.92;
+        state.orbit.radius = state.mode === 'sector' ? 160 : 190;
+        state.orbit.targetGoal.set(0, 12, 0);
+      }
+
+      function updateModeButtons(){
+        refs.modeSectorBtn.classList.toggle('active', state.mode === 'sector');
+        refs.modeDetailBtn.classList.toggle('active', state.mode === 'detail');
+      }
+
+      function updateMapTitle(){
+        refs.mapTitle.textContent = state.mode === 'sector' ? '12대 분야 3D 맵' : '50대 상세 3D 맵';
+        refs.mapSubtitle.textContent = state.mode === 'sector'
+          ? '분야 플랫폼 면적은 2026 예산, 타워 높이는 분야 기술수준입니다.'
+          : '분야별로 분리된 플랫폼 안에 50개 세부 중점기술을 배치했습니다. 타워 높이는 기술수준입니다.';
+      }
+
+      function updateSelectionMeta(){
+        const selection = getSelection();
+        const sector = selection ? getSector(selection.sectorId) : null;
+        if (!selection || !sector) {
+          refs.selectionMeta.textContent = '현재 선택 없음';
+          return;
+        }
+        if (selection.type === 'tech') {
+          const tech = getTech(sector, selection.techName);
+          refs.selectionMeta.textContent = `현재 선택: ${sector.name} · ${tech ? tech.name : selection.techName}`;
+        } else {
+          refs.selectionMeta.textContent = `현재 선택: ${sector.name}`;
+        }
+        Array.from(refs.sectorStrip.children).forEach(node => {
+          node.classList.toggle('active', Number(node.dataset.sectorId) === sector.id);
+        });
+      }
+
+      function buildSectorStrip(){
+        refs.sectorStrip.innerHTML = DATA.sectors.map(sector => `
+          <button class="sector-chip${sector.id === state.selectedSectorId ? ' active' : ''}" data-sector-id="${sector.id}" type="button">
+            <span class="dot" style="background:${escapeAttr(sector.color)}"></span>
+            <span>${escapeHtml(sector.name)}</span>
+          </button>
+        `).join('');
+        refs.sectorStrip.querySelectorAll('[data-sector-id]').forEach(btn => {
+          btn.addEventListener('click', () => selectSector(Number(btn.dataset.sectorId)));
+        });
+      }
+
+      function renderSummary(){
+        refs.sumBudget26.textContent = formatBudgetTrillion(DATA.meta.totalBudgetTrillion2026);
+        refs.sumBudget25.textContent = formatBudgetTrillion(DATA.meta.totalBudgetTrillion2025);
+        refs.sumSectorCount.textContent = DATA.meta.sectorCount + '개';
+        refs.sumTechCount.textContent = DATA.meta.detailTechCount + '개';
+        refs.sumTechLevel.textContent = formatPercent(DATA.meta.averageTechLevelPct);
+      }
+
+      function renderPanel(){
+        const selection = getSelection();
+        const sector = selection ? getSector(selection.sectorId) : getSector(DATA.sectors[0] && DATA.sectors[0].id);
+        if (!sector) return;
+        const tech = selection && selection.type === 'tech' ? getTech(sector, selection.techName) : null;
+
+        refs.detailKicker.textContent = tech ? '세부 중점기술' : '전략기술 분야';
+        refs.detailTitle.textContent = tech ? tech.name : sector.name;
+        refs.detailSubtitle.textContent = tech ? sector.name : `세부 중점기술 ${sector.detailTechs.length}개`;
+
+        const techRows = sector.detailTechs.slice().sort((a, b) =>
+          (b.techLevelPct || 0) - (a.techLevelPct || 0) || (b.budgetMillion2026 || 0) - (a.budgetMillion2026 || 0)
+        ).map(item => renderTechRow(sector, item, tech && tech.name === item.name)).join('');
+
+        const useTechProjects = !!(tech && tech.projects && tech.projects.length);
+        const sourceProjects = useTechProjects ? tech.projects : sector.projects;
+        const sourceMinistries = useTechProjects ? tech.ministries : (sector.departmentBudgets.length ? sector.departmentBudgets : sector.ministries);
+        const noteText = tech
+          ? (useTechProjects ? '' : (sector.hasFocusTechMapping ? '선택한 세부 중점기술과 직접 연결된 사업이 없어, 분야 전체 사업을 표시합니다.' : '이 분야는 중점기술별 직접 매핑이 없어 분야 전체 사업을 표시합니다.'))
+          : sector.mappingNote;
+
+        refs.detailBody.innerHTML = `
+          <section class="section">
+            <div class="hero-grid">
+              ${heroCard(tech ? '기술수준' : '분야 기술수준', formatPercent(tech ? tech.techLevelPct : sector.techLevelPct), tech ? '세부 중점기술' : `${sector.detailTechCount}개 세부 중점기술`)}
+              ${heroCard('2026 예산', tech ? formatBudgetMixed(tech.budgetMillion2026) : formatBudgetTrillion(sector.budgetTrillion2026), tech ? `${tech.projectCount || 0}개 연결사업` : `${sector.projectsCount || sector.projects.length}개 사업`)}
+              ${heroCard('2025 비교', tech ? formatBudgetMixed(tech.budgetMillion2025) : formatBudgetTrillion(sector.budgetTrillion2025), tech ? `증감 ${formatBudgetSigned(tech.budgetDiffMillion, 'million')}` : `증감 ${formatBudgetSigned(sector.budgetDiffTrillion, 'trillion')}`)}
+            </div>
+          </section>
+
+          <section class="section">
+            <div class="section-title">
+              <span>세부 중점기술 · 기술수준</span>
+              <span class="section-sub">${escapeHtml(sector.name)}</span>
+            </div>
+            <div class="tech-list">${techRows}</div>
+          </section>
+
+          <section class="section">
+            <div class="section-title">
+              <span>부처별 예산</span>
+              <span class="section-sub">2026 기준</span>
+            </div>
+            ${noteText ? `<div class="note">${escapeHtml(noteText)}</div>` : ''}
+            <div class="dept-list">${renderMinistries(sourceMinistries)}</div>
+          </section>
+
+          <section class="section">
+            <div class="section-title">
+              <span>관련사업 목록</span>
+              <span class="section-sub">${sourceProjects.length}개</span>
+            </div>
+            <div class="project-list">${sourceProjects.length ? sourceProjects.slice(0, 30).map(renderProjectCard).join('') : '<div class="empty">관련사업이 없습니다.</div>'}</div>
+            ${sourceProjects.length > 30 ? `<div class="empty">외 ${sourceProjects.length - 30}개 사업이 더 있습니다.</div>` : ''}
+          </section>
+        `;
+
+        refs.detailBody.querySelectorAll('[data-tech-button]').forEach(btn => {
+          btn.addEventListener('click', () => selectTech(Number(btn.dataset.sectorId), btn.dataset.techName));
+        });
+      }
+
+      function renderTechRow(sector, tech, active){
+        const budget26 = formatBudgetMixed(tech.budgetMillion2026);
+        const budget25 = formatBudgetMixed(tech.budgetMillion2025);
+        return `
+          <button class="tech-row${active ? ' active' : ''}" type="button" data-tech-button="1" data-sector-id="${sector.id}" data-tech-name="${escapeAttr(tech.name)}">
+            <div class="tech-row-top">
+              <div class="tech-row-name">${escapeHtml(tech.name)}</div>
+              <div class="tech-row-level"><span>기술수준</span>${formatPercent(tech.techLevelPct)}</div>
+            </div>
+            <div class="level-track"><div class="level-fill" style="width:${Math.max(4, Math.min(100, tech.techLevelPct || 0))}%"></div></div>
+            <div class="tech-row-meta">
+              <span>2026 ${budget26}</span>
+              <span>2025 ${budget25}</span>
+              <span>${tech.projectCount || 0}개 사업</span>
+            </div>
+          </button>
+        `;
+      }
+
+      function renderMinistries(items){
+        const rows = Array.isArray(items) ? items.filter(Boolean) : [];
+        if (!rows.length) return '<div class="empty">부처별 예산 정보가 없습니다.</div>';
+        const maxBudget = Math.max(1, ...rows.map(item => Number(item.budgetMillion2026 || 0)));
+        return rows.slice().sort((a, b) => Number(b.budgetMillion2026 || 0) - Number(a.budgetMillion2026 || 0)).map(item => `
+          <div class="dept-item">
+            <div class="dept-top">
+              <div class="dept-name">${escapeHtml(item.name)}</div>
+              <div class="mono">${formatBudgetMixed(item.budgetMillion2026 || 0)}</div>
+            </div>
+            <div class="bar-track"><div class="bar-fill" style="width:${Math.max(6, ((Number(item.budgetMillion2026 || 0) / maxBudget) * 100))}%"></div></div>
+            <div class="bar-meta">
+              <span>2026 ${formatBudgetMixed(item.budgetMillion2026 || 0)}</span>
+              <span>2025 ${formatBudgetMixed(item.budgetMillion2025 || 0)}</span>
+              <span>${item.projectCount || 0}개 사업</span>
+            </div>
+          </div>
+        `).join('');
+      }
+
+      function renderProjectCard(project){
+        return `
+          <article class="project-card">
+            <div class="project-head">
+              <div class="project-program">${escapeHtml(project.program || project.subproject || '사업명 없음')}</div>
+              <div class="project-ministry">${escapeHtml(project.ministry || '부처 미상')}</div>
+            </div>
+            <div class="project-sub">${escapeHtml(project.subproject || '')}</div>
+            <div class="project-meta">
+              <div class="project-pill">
+                <div class="k">2026 예산</div>
+                <div class="v">${formatBudgetMixed(project.budgetMillion2026 || 0)}</div>
+              </div>
+              <div class="project-pill">
+                <div class="k">2025 비교</div>
+                <div class="v">${formatBudgetMixed(project.budgetMillion2025 || 0)}</div>
+              </div>
+              <div class="project-pill">
+                <div class="k">기간</div>
+                <div class="v">${escapeHtml(formatPeriod(project.start, project.end))}</div>
+              </div>
+            </div>
+          </article>
+        `;
+      }
+
+      function heroCard(label, value, meta){
+        return `
+          <div class="hero-card">
+            <div class="h-label">${escapeHtml(label)}</div>
+            <div class="h-value">${escapeHtml(String(value))}</div>
+            <div class="h-meta">${escapeHtml(meta)}</div>
+          </div>
+        `;
+      }
+
+      function applyTheme(mode, persist){
+        state.theme = mode === 'dark' ? 'dark' : 'light';
+        document.body.classList.toggle('dark-mode', state.theme === 'dark');
+        refs.themeToggleBtn.textContent = state.theme === 'light' ? '🌙 다크' : '☀️ 라이트';
+        if (persist) localStorage.setItem(STORAGE_THEME, state.theme);
+        if (!window.THREE || !scene) return;
+        const palette = state.theme === 'light'
+          ? {
+              clear: 0x000000,
+              fog: 0xcfe4f7,
+              ocean: 0x94c2e5,
+              floor: 0xffffff,
+              skyline: 0xb8d2ea,
+              ambient: 1.08,
+              hemi: 1.12,
+              key: 1.52,
+              fill: 0.58
+            }
+          : {
+              clear: 0x000000,
+              fog: 0x16314e,
+              ocean: 0x295a86,
+              floor: 0xd7ecff,
+              skyline: 0x547293,
+              ambient: 0.82,
+              hemi: 0.95,
+              key: 1.34,
+              fill: 0.42
+            };
+        scene.fog = new window.THREE.FogExp2(palette.fog, state.theme === 'light' ? 0.0044 : 0.0066);
+        renderer.setClearColor(palette.clear, 0);
+        oceanMesh.material.color.set(palette.ocean);
+        floorMesh.material.color.set(palette.floor);
+        ambientLight.intensity = palette.ambient;
+        hemiLight.intensity = palette.hemi;
+        keyLight.intensity = palette.key;
+        fillLight.intensity = palette.fill;
+        skylineGroup.children.forEach(child => child.material.color.set(palette.skyline));
+      }
+
+      function applySummaryVisibility(){
+        refs.summaryPanel.classList.toggle('collapsed', !state.summaryOpen);
+        refs.summaryToggleBtn.textContent = state.summaryOpen ? '주요현황 숨기기' : '주요현황 보기';
+      }
+
+      function applyPanelVisibility(){
+        const open = state.panelOpen || window.innerWidth > 1180;
+        refs.detailPanel.style.display = open ? 'flex' : 'none';
+        refs.panelOpenBtn.classList.toggle('active', open);
+        refs.panelOpenBtn.textContent = open ? '상세패널 닫기' : '상세패널 보기';
+      }
+
+      function showError(message){
+        refs.errorBox.textContent = message;
+        refs.errorBox.classList.add('visible');
+      }
+
+      function getSelection(){
+        if (state.selectedTechKey) {
+          const parts = state.selectedTechKey.split('|');
+          if (parts.length >= 2) {
+            return { type: 'tech', sectorId: Number(parts[0]), techName: parts.slice(1).join('|') };
+          }
+        }
+        return state.selectedSectorId != null ? { type: 'sector', sectorId: state.selectedSectorId } : null;
+      }
+
+      function getSector(sectorId){
+        return sectorMap.get(Number(sectorId)) || null;
+      }
+
+      function getTech(sector, techName){
+        if (!sector) return null;
+        return sector.detailTechs.find(item => item.name === techName) || null;
+      }
+
+      function aggregateMinistries(projects){
+        const map = new Map();
+        (projects || []).forEach(project => {
+          const key = project.ministry || '부처 미상';
+          if (!map.has(key)) {
+            map.set(key, { name: key, budgetMillion2025: 0, budgetMillion2026: 0, projectCount: 0 });
+          }
+          const row = map.get(key);
+          row.budgetMillion2025 += Number(project.budgetMillion2025 || 0);
+          row.budgetMillion2026 += Number(project.budgetMillion2026 || 0);
+          row.projectCount += 1;
+        });
+        return Array.from(map.values()).sort((a, b) => b.budgetMillion2026 - a.budgetMillion2026);
+      }
+
+      function canonicalTechName(name, aliases){
+        const raw = String(name || '').trim();
+        if (!raw) return '';
+        const lower = raw.toLowerCase();
+        if (aliases.has(raw)) return aliases.get(raw);
+        if (aliases.has(lower)) return aliases.get(lower);
+        return raw;
+      }
+
+      function normalizeKey(value){
+        return String(value || '').replace(/\s+/g, '').replace(/[·ㆍ\-\–—_]/g, '').replace(/[()［］\[\]\/]/g, '').toLowerCase();
+      }
+
+      function spiralPoint(index, total, radius, seed){
+        if (total <= 1) return { x: 0, z: 0 };
+        const golden = Math.PI * (3 - Math.sqrt(5));
+        const t = (index + 0.55) / total;
+        const r = Math.sqrt(t) * radius * (0.88 + seeded(seed + index * 17) * 0.18);
+        const angle = index * golden + seed;
+        return { x: Math.cos(angle) * r, z: Math.sin(angle) * r };
+      }
+
+      function seeded(n){
+        const x = Math.sin(n * 12.9898) * 43758.5453;
+        return x - Math.floor(x);
+      }
+
+      function getPreferredTheme(){
+        const saved = localStorage.getItem(STORAGE_THEME);
+        if (saved === 'light' || saved === 'dark') return saved;
+        return 'light';
+      }
+
+      function getStoredBool(key, fallback){
+        const raw = localStorage.getItem(key);
+        if (raw === 'true') return true;
+        if (raw === 'false') return false;
+        return fallback;
+      }
+
+      function getStoredRaw(key){
+        return localStorage.getItem(key);
+      }
+
+      function remap(value, min, max, outMin, outMax){
+        if (min === max) return (outMin + outMax) / 2;
+        const t = (value - min) / (max - min);
+        return outMin + (outMax - outMin) * t;
+      }
+
+      function clamp(value, min, max){
+        return Math.min(max, Math.max(min, value));
+      }
+
+      function color(value){
+        if (value && value.isColor) return value.clone();
+        const key = String(value);
+        if (!colorCache.has(key)) colorCache.set(key, new window.THREE.Color(key));
+        return colorCache.get(key).clone();
+      }
+
+      function shade(value, amount){
+        const c = color(value);
+        const target = amount >= 0 ? new window.THREE.Color(0xffffff) : new window.THREE.Color(0x000000);
+        return c.lerp(target, Math.abs(amount));
+      }
+
+      function round0(v){
+        return Math.round(Number(v || 0));
+      }
+
+      function round1(v){
+        return Math.round(Number(v || 0) * 10) / 10;
+      }
+
+      function formatBudgetTrillion(value){
+        return Number(value || 0).toFixed(2) + '조원';
+      }
+
+      function formatBudgetMixed(value){
+        const hundredMillion = Number(value || 0) / 100;
+        return hundredMillion.toLocaleString('ko-KR', { minimumFractionDigits: hundredMillion >= 100 ? 0 : 1, maximumFractionDigits: 1 }) + '억원';
+      }
+
+      function formatBudgetSigned(value, unit){
+        const num = Number(value || 0);
+        const sign = num > 0 ? '+' : num < 0 ? '-' : '±';
+        if (unit === 'trillion') {
+          return sign + Math.abs(num).toFixed(2) + '조원';
+        }
+        return sign + (Math.abs(num) / 100).toLocaleString('ko-KR', { minimumFractionDigits: 1, maximumFractionDigits: 1 }) + '억원';
+      }
+
+      function formatPercent(value){
+        return Number(value || 0).toFixed(1) + '%';
+      }
+
+      function formatPeriod(start, end){
+        const a = start == null ? '-' : String(start);
+        const b = end == null ? '-' : String(end);
+        return a + ' ~ ' + b;
+      }
+
+      function escapeHtml(value){
+        return String(value == null ? '' : value)
+          .replace(/&/g, '&amp;')
+          .replace(/</g, '&lt;')
+          .replace(/>/g, '&gt;')
+          .replace(/"/g, '&quot;')
+          .replace(/'/g, '&#39;');
+      }
+
+      function escapeAttr(value){
+        return escapeHtml(value).replace(/"/g, '&quot;');
+      }
+
+      init();
+    })();
+  </script>
+</body>
+</html>
