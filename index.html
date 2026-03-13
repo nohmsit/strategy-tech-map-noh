@@ -1,876 +1,1509 @@
-
 <!DOCTYPE html>
 <html lang="ko">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>국가전략기술 Strategic Map 3D</title>
+  <title>국가전략기술 3D Map</title>
   <script src="data.js"></script>
   <style>
     :root{
-      --bg:#07101d;
-      --bg-soft:#0d1728;
-      --panel:#0f1b2f;
-      --panel-2:#13223a;
-      --line:#1d3555;
-      --line-strong:#2b4f79;
-      --text:#edf4ff;
-      --muted:#96abc7;
-      --accent:#87c7ff;
-      --accent-2:#c4b5fd;
-      --shadow:0 30px 80px rgba(0,0,0,.35);
-      --header-h:78px;
-      --chip-bg:rgba(255,255,255,.04);
-      --panel-shadow:0 26px 70px rgba(0,0,0,.45);
-      --input-bg:rgba(255,255,255,.03);
-      --danger:#ff8c8c;
-      --ok:#76d7a3;
+      --bg-top:#081624;
+      --bg-bottom:#09111b;
+      --panel:rgba(9,20,34,.88);
+      --panel-strong:rgba(9,20,34,.96);
+      --panel-soft:rgba(255,255,255,.06);
+      --border:rgba(255,255,255,.12);
+      --border-strong:rgba(255,255,255,.22);
+      --text:#eff7ff;
+      --muted:#9db2c8;
+      --accent:#87d7ff;
+      --accent-2:#d7f3ff;
+      --shadow:0 22px 70px rgba(0,0,0,.32);
+      --radius:22px;
+      --topbar-h:112px;
+      --panel-width:440px;
+      --safe:env(safe-area-inset-bottom,0px);
+      --font: Inter, "Noto Sans KR", "Apple SD Gothic Neo", "Malgun Gothic", sans-serif;
     }
-
     body.light-mode{
-      --bg:#eef4fb;
-      --bg-soft:#f7fafe;
-      --panel:#ffffff;
-      --panel-2:#f4f8fd;
-      --line:#d4dfec;
-      --line-strong:#b8cade;
-      --text:#112138;
-      --muted:#617a97;
-      --accent:#2577dd;
-      --accent-2:#7b61ff;
-      --shadow:0 26px 70px rgba(42,64,92,.14);
-      --chip-bg:rgba(17,33,56,.04);
-      --panel-shadow:0 24px 64px rgba(36,56,82,.16);
-      --input-bg:#f4f8fc;
-      --danger:#d84d4d;
-      --ok:#17865b;
+      --bg-top:#eef6ff;
+      --bg-bottom:#dfeaf6;
+      --panel:rgba(252,254,255,.84);
+      --panel-strong:rgba(255,255,255,.96);
+      --panel-soft:rgba(31,88,142,.06);
+      --border:rgba(17,63,109,.14);
+      --border-strong:rgba(17,63,109,.22);
+      --text:#10263c;
+      --muted:#55718c;
+      --accent:#1878c8;
+      --accent-2:#0d4d84;
+      --shadow:0 22px 60px rgba(18,57,95,.13);
     }
-
     *{box-sizing:border-box}
-    html,body{margin:0;padding:0;min-height:100%}
-    body{
-      background:
-        radial-gradient(circle at top left, rgba(135,199,255,.16), transparent 28%),
-        radial-gradient(circle at top right, rgba(196,181,253,.11), transparent 24%),
-        linear-gradient(180deg, var(--bg) 0%, #091425 100%);
-      color:var(--text);
-      font-family: Inter, "Noto Sans KR", Apple SD Gothic Neo, "Malgun Gothic", sans-serif;
-      overflow:hidden;
+    html,body{margin:0;height:100%;overflow:hidden;font-family:var(--font);color:var(--text);background:
+      radial-gradient(circle at 16% 14%, rgba(104,196,255,.18), transparent 28%),
+      radial-gradient(circle at 82% 18%, rgba(180,134,255,.16), transparent 24%),
+      radial-gradient(circle at 50% 84%, rgba(0,228,255,.10), transparent 34%),
+      linear-gradient(180deg,var(--bg-top) 0%, var(--bg-bottom) 100%);
     }
-    body.light-mode{
+    body::before{
+      content:""; position:fixed; inset:0; pointer-events:none; opacity:.32;
       background:
-        radial-gradient(circle at top left, rgba(37,119,221,.08), transparent 28%),
-        radial-gradient(circle at top right, rgba(123,97,255,.07), transparent 24%),
-        linear-gradient(180deg, var(--bg) 0%, #edf4fb 100%);
+        linear-gradient(rgba(255,255,255,.04) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255,255,255,.04) 1px, transparent 1px);
+      background-size: 42px 42px, 42px 42px;
+      mask-image: linear-gradient(180deg, rgba(0,0,0,.8), rgba(0,0,0,.25));
     }
-
-    button,input{font:inherit}
-    .app{height:100vh;display:flex;flex-direction:column}
-
+    body.light-mode::before{opacity:.18}
+    #app{position:fixed; inset:0}
+    #sceneCanvas{display:block; width:100%; height:100%; outline:none; touch-action:none}
+    .screen-grad{
+      position:fixed; inset:0; pointer-events:none;
+      background:
+        radial-gradient(circle at 50% 42%, rgba(255,255,255,.08), transparent 32%),
+        linear-gradient(180deg, rgba(255,255,255,.03), transparent 28%, transparent 72%, rgba(255,255,255,.02));
+    }
     .topbar{
-      height:var(--header-h);
-      padding:18px 22px;
-      display:flex;
-      align-items:center;
-      gap:18px;
-      border-bottom:1px solid var(--line);
-      background:rgba(7,16,29,.72);
-      backdrop-filter: blur(20px);
-      position:relative;
-      z-index:30;
-      flex-shrink:0;
+      position:fixed; left:18px; right:18px; top:18px; z-index:20;
+      display:grid; grid-template-columns:minmax(240px,1fr) minmax(320px,1.1fr) auto;
+      gap:14px; align-items:stretch; pointer-events:none;
     }
-    body.light-mode .topbar{
-      background:rgba(245,249,254,.84);
+    .glass{
+      background:linear-gradient(180deg, var(--panel), rgba(9,20,34,.70));
+      backdrop-filter: blur(18px); -webkit-backdrop-filter: blur(18px);
+      border:1px solid var(--border); box-shadow:var(--shadow); border-radius:var(--radius);
+      pointer-events:auto;
     }
-    .brand{min-width:250px}
+    body.light-mode .glass{background:linear-gradient(180deg,var(--panel), rgba(255,255,255,.72))}
+    .brand{
+      padding:16px 18px; min-height:110px; display:flex; flex-direction:column; justify-content:center; gap:10px;
+    }
     .eyebrow{
-      font-size:11px;
-      letter-spacing:.22em;
-      text-transform:uppercase;
-      color:var(--accent);
-      font-weight:800;
-      margin-bottom:5px;
+      font-size:11px; font-weight:800; letter-spacing:.16em; text-transform:uppercase; color:var(--accent);
     }
-    .title{
-      font-size:26px;
-      font-weight:900;
-      letter-spacing:-.03em;
-      line-height:1;
-    }
-
-    .header-metrics{
-      display:grid;
-      grid-template-columns:repeat(5,minmax(0,1fr));
-      gap:12px;
-      flex:1;
-      min-width:0;
-    }
-    .metric-top{
-      min-width:0;
-      padding:10px 12px;
-      border:1px solid var(--line);
-      border-radius:16px;
-      background:linear-gradient(180deg, rgba(255,255,255,.04), rgba(255,255,255,.02));
-      box-shadow: inset 0 1px 0 rgba(255,255,255,.06);
-    }
-    body.light-mode .metric-top{
-      background:linear-gradient(180deg, rgba(255,255,255,.92), rgba(250,252,255,.82));
-      box-shadow: inset 0 1px 0 rgba(255,255,255,.9);
-    }
-    .metric-top .v{
-      font-size:24px;
-      font-weight:900;
-      line-height:1;
-      letter-spacing:-.03em;
-    }
-    .metric-top .k{
-      margin-top:5px;
-      color:var(--muted);
-      font-size:11px;
+    .title-row{display:flex; align-items:center; gap:10px; flex-wrap:wrap}
+    .title-row h1{margin:0; font-size:clamp(22px,2.4vw,32px); font-weight:900; letter-spacing:-.035em; line-height:1.05}
+    .chip{
+      padding:8px 12px; border-radius:999px; font-size:12px; font-weight:800;
+      background:rgba(135,215,255,.12); border:1px solid rgba(135,215,255,.18); color:var(--accent-2);
       white-space:nowrap;
-      overflow:hidden;
-      text-overflow:ellipsis;
     }
-
-    .header-actions{
-      display:flex;
-      gap:10px;
-      align-items:center;
-      flex-shrink:0;
+    body.light-mode .chip{background:rgba(24,120,200,.08); border-color:rgba(24,120,200,.14)}
+    .summary{
+      padding:12px; min-height:110px; display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:10px;
     }
+    .metric{
+      padding:14px 16px; border-radius:16px; background:linear-gradient(180deg,var(--panel-soft), rgba(255,255,255,.02));
+      border:1px solid rgba(255,255,255,.08); min-width:0; display:flex; flex-direction:column; justify-content:center; gap:8px;
+    }
+    body.light-mode .metric{border-color:rgba(17,63,109,.08)}
+    .metric .label{font-size:11px; font-weight:800; letter-spacing:.11em; text-transform:uppercase; color:var(--muted)}
+    .metric .value{font-size:clamp(16px,1.5vw,24px); font-weight:900; letter-spacing:-.03em; line-height:1.05}
+    .controls{
+      min-width:180px; padding:12px; display:flex; flex-direction:column; gap:10px; justify-content:center;
+    }
+    .controls-row{display:flex; gap:10px}
     .action-btn{
-      height:42px;
-      padding:0 14px;
-      border-radius:12px;
-      border:1px solid var(--line-strong);
-      background:var(--panel);
-      color:var(--text);
-      cursor:pointer;
-      font-weight:700;
-      transition:.18s ease;
+      flex:1; height:44px; border-radius:14px; border:1px solid var(--border); background:rgba(255,255,255,.06);
+      color:var(--text); font:inherit; font-size:13px; font-weight:800; cursor:pointer; transition:.2s ease;
     }
-    .action-btn:hover{
-      transform:translateY(-1px);
-      border-color:var(--accent);
-      box-shadow:0 8px 20px rgba(37,119,221,.12);
+    .action-btn:hover{transform:translateY(-1px); border-color:rgba(135,215,255,.34); box-shadow:0 10px 24px rgba(28,89,150,.12)}
+    .search-wrap{
+      position:fixed; z-index:22; left:50%; transform:translateX(-50%); top:144px;
+      width:min(520px, calc(100vw - 36px)); pointer-events:auto;
     }
-
-    .workspace{
-      position:relative;
-      flex:1;
-      min-height:0;
-      padding:16px;
+    .search-box{
+      display:flex; align-items:center; gap:12px; padding:0 14px; height:56px;
     }
-    .stage-card{
-      position:relative;
-      height:100%;
-      border-radius:24px;
-      background:
-        linear-gradient(180deg, rgba(255,255,255,.05), rgba(255,255,255,.015)),
-        linear-gradient(180deg, var(--bg-soft), rgba(7,16,29,.74));
-      border:1px solid var(--line);
-      box-shadow:var(--shadow);
-      overflow:hidden;
-      isolation:isolate;
+    .search-box svg{width:18px; height:18px; color:var(--muted); flex:0 0 auto}
+    .search-input{
+      flex:1; min-width:0; border:none; outline:none; background:transparent; color:var(--text); font:inherit;
+      font-size:15px; font-weight:700;
     }
-    body.light-mode .stage-card{
-      background:
-        linear-gradient(180deg, rgba(255,255,255,.84), rgba(255,255,255,.72)),
-        linear-gradient(180deg, #f9fbfe, #edf4fb);
+    .search-input::placeholder{color:var(--muted); font-weight:600}
+    .labels-layer{position:fixed; inset:0; z-index:12; pointer-events:none}
+    .sector-label{
+      position:absolute; transform:translate(-50%, -50%); min-width:116px; max-width:160px;
+      padding:10px 12px 11px; border-radius:16px; border:1px solid rgba(255,255,255,.14);
+      background:rgba(8,19,31,.70); box-shadow:0 14px 34px rgba(0,0,0,.22);
+      backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
+      text-align:center; pointer-events:auto; cursor:pointer; transition:.18s ease; user-select:none;
     }
-
-    .stage-head{
-      position:absolute;
-      top:0;left:0;right:0;
-      padding:14px 18px 0;
-      display:flex;
-      justify-content:space-between;
-      gap:12px;
-      z-index:12;
-      pointer-events:none;
+    body.light-mode .sector-label{background:rgba(255,255,255,.80); border-color:rgba(17,63,109,.12)}
+    .sector-label:hover,.sector-label.active{transform:translate(-50%, -53%); border-color:rgba(255,255,255,.28)}
+    .sector-label .name{font-size:14px; font-weight:900; line-height:1.18; letter-spacing:-.025em}
+    .sector-label .meta{margin-top:5px; font-size:11px; font-weight:800; color:var(--muted)}
+    .tooltip{
+      position:fixed; z-index:30; pointer-events:none; opacity:0; transform:translate3d(0,8px,0);
+      min-width:160px; max-width:260px; padding:12px 14px; border-radius:16px; border:1px solid rgba(255,255,255,.14);
+      background:rgba(8,19,31,.92); box-shadow:var(--shadow); backdrop-filter: blur(14px); transition:.12s ease;
     }
-    .status-card{
-      pointer-events:auto;
-      min-width:260px;
-      max-width:420px;
-      padding:12px 14px;
-      border-radius:16px;
-      border:1px solid var(--line);
-      background:rgba(9,20,37,.68);
-      backdrop-filter:blur(18px);
-      box-shadow:0 16px 40px rgba(0,0,0,.18);
-      opacity:0;
-      transform:translateY(-8px);
-      transition:.2s ease;
+    body.light-mode .tooltip{background:rgba(255,255,255,.94); border-color:rgba(17,63,109,.14)}
+    .tooltip.visible{opacity:1; transform:translate3d(0,0,0)}
+    .tooltip-title{font-size:13px; font-weight:900; line-height:1.35}
+    .tooltip-sub{margin-top:6px; font-size:12px; color:var(--muted); line-height:1.45}
+    .panel{
+      position:fixed; top:18px; right:18px; bottom:18px; width:min(var(--panel-width), calc(100vw - 36px)); z-index:24;
+      transform:translateX(calc(100% + 24px)); opacity:0; pointer-events:none; transition:.28s ease;
+      display:flex; flex-direction:column;
     }
-    body.light-mode .status-card{
-      background:rgba(255,255,255,.82);
+    body.panel-open .panel{transform:translateX(0); opacity:1; pointer-events:auto}
+    .panel-shell{
+      height:100%; display:flex; flex-direction:column; border-radius:28px; overflow:hidden;
     }
-    .status-card.show{opacity:1;transform:translateY(0)}
-    .status-card .name{
-      font-size:18px;
-      font-weight:900;
-      line-height:1.1;
-      letter-spacing:-.02em;
-      margin-bottom:6px;
+    .panel-head{
+      padding:18px 18px 12px; border-bottom:1px solid var(--border); display:flex; align-items:flex-start; gap:12px;
     }
-    .status-card .meta{
-      font-size:13px;
-      color:var(--muted);
-      display:flex;
-      flex-wrap:wrap;
-      gap:8px 12px;
-    }
-
-    .scene-wrap{
-      position:absolute;
-      inset:0;
-    }
-    #sceneCanvas{
-      width:100%;
-      height:100%;
-      display:block;
-      cursor:grab;
-    }
-    #sceneCanvas.dragging{cursor:grabbing}
-    .label-layer{
-      position:absolute;
-      inset:0;
-      pointer-events:none;
-      z-index:6;
-    }
-    .floating-label{
-      position:absolute;
-      transform:translate(-50%,-50%);
-      padding:8px 10px;
-      border-radius:12px;
-      border:1px solid rgba(255,255,255,.16);
-      background:rgba(9,18,33,.64);
-      backdrop-filter:blur(10px);
-      color:#fff;
-      font-weight:800;
-      font-size:12px;
-      line-height:1.1;
-      text-align:center;
-      white-space:nowrap;
-      box-shadow:0 12px 30px rgba(0,0,0,.22);
-      opacity:0;
-      transition:opacity .12s ease, transform .12s ease, background .18s ease, border-color .18s ease;
-    }
-    body.light-mode .floating-label{
-      background:rgba(255,255,255,.8);
-      color:#10223a;
-      border-color:rgba(17,33,56,.12);
-    }
-    .floating-label.show{opacity:1}
-    .floating-label.selected{
-      background:linear-gradient(135deg, rgba(135,199,255,.85), rgba(196,181,253,.82));
-      color:#07101d;
-      border-color:rgba(255,255,255,.55);
-      transform:translate(-50%,-50%) scale(1.04);
-    }
-    body.light-mode .floating-label.selected{
-      color:#0b1526;
-      background:linear-gradient(135deg, rgba(135,199,255,.88), rgba(196,181,253,.88));
-    }
-
-    .scene-ambient{
-      position:absolute;
-      inset:auto 16px 16px 16px;
-      display:flex;
-      gap:10px;
-      align-items:flex-end;
-      justify-content:space-between;
-      z-index:10;
-      pointer-events:none;
-    }
-    .sector-strip{
-      display:flex;
-      gap:8px;
-      flex-wrap:wrap;
-      max-width:calc(100% - 180px);
-      pointer-events:auto;
-    }
-    .sector-chip{
-      pointer-events:auto;
-      padding:8px 12px;
-      border-radius:999px;
-      border:1px solid var(--line);
-      background:var(--chip-bg);
-      color:var(--text);
-      cursor:pointer;
-      font-size:12px;
-      font-weight:700;
-      transition:.18s ease;
-      box-shadow:0 8px 20px rgba(0,0,0,.08);
-    }
-    .sector-chip:hover,
-    .sector-chip.active{
-      transform:translateY(-1px);
-      border-color:var(--accent);
-      box-shadow:0 10px 24px rgba(37,119,221,.14);
-    }
-    .sector-chip .budget{
-      color:var(--muted);
-      font-weight:600;
-      margin-left:6px;
-    }
-
-    .error-banner{
-      position:absolute;
-      left:18px;
-      right:18px;
-      bottom:82px;
-      z-index:14;
-      padding:14px 16px;
-      border-radius:16px;
-      border:1px solid rgba(255,140,140,.28);
-      background:rgba(70,22,22,.84);
-      color:#ffe5e5;
-      box-shadow:0 20px 44px rgba(0,0,0,.24);
-      display:none;
-    }
-    body.light-mode .error-banner{
-      background:#fff2f2;
-      color:#7f2525;
-      border-color:#f2c9c9;
-    }
-    .error-banner.show{display:block}
-    .error-banner strong{display:block;margin-bottom:4px}
-
-    .drawer{
-      position:fixed;
-      top:12px;
-      right:12px;
-      bottom:12px;
-      width:min(460px, calc(100vw - 24px));
-      overscroll-behavior:contain;
-      background:linear-gradient(180deg, rgba(15,27,47,.96), rgba(10,19,34,.98));
-      border:1px solid var(--line);
-      border-radius:28px;
-      box-shadow:var(--panel-shadow);
-      z-index:40;
-      transform:translateX(calc(100% + 24px));
-      transition:transform .26s cubic-bezier(.2,.8,.2,1);
-      display:flex;
-      flex-direction:column;
-      overflow:hidden;
-      backdrop-filter: blur(20px);
-    }
-    body.light-mode .drawer{
-      background:linear-gradient(180deg, rgba(255,255,255,.98), rgba(247,250,254,.98));
-    }
-    .drawer.open{transform:translateX(0)}
-    .backdrop{
-      position:fixed;
-      inset:0;
-      background:rgba(0,0,0,.32);
-      backdrop-filter:blur(3px);
-      z-index:35;
-      opacity:0;
-      pointer-events:none;
-      transition:.2s ease;
-    }
-    .backdrop.show{opacity:1;pointer-events:auto}
-
-    .drawer-head{
-      padding:18px 18px 14px;
-      border-bottom:1px solid var(--line);
-      display:flex;
-      align-items:center;
-      gap:14px;
-      flex-shrink:0;
-    }
-    .drawer-color{
-      width:18px;height:18px;border-radius:6px;flex-shrink:0;
-      box-shadow:0 0 0 4px rgba(255,255,255,.06);
-    }
-    .drawer-title-wrap{min-width:0;flex:1}
-    .drawer-eyebrow{
-      font-size:11px;
-      font-weight:800;
-      letter-spacing:.18em;
-      text-transform:uppercase;
-      color:var(--accent);
-      margin-bottom:5px;
-    }
-    .drawer-title{
-      font-size:28px;
-      font-weight:900;
-      line-height:1;
-      letter-spacing:-.03em;
-      margin:0;
-    }
+    .panel-title-wrap{flex:1; min-width:0}
+    .panel-kicker{font-size:11px; font-weight:800; text-transform:uppercase; letter-spacing:.14em; color:var(--accent)}
+    .panel-title{margin-top:6px; font-size:27px; font-weight:900; line-height:1.1; letter-spacing:-.04em; word-break:keep-all}
+    .panel-subtitle{margin-top:8px; font-size:13px; font-weight:700; color:var(--muted)}
     .icon-btn{
-      width:40px;height:40px;border-radius:12px;border:1px solid var(--line);
-      background:var(--panel-2);color:var(--text);cursor:pointer;font-size:24px;line-height:1;
-      display:grid;place-items:center;transition:.18s ease;
+      width:42px; height:42px; flex:0 0 auto; border-radius:14px; border:1px solid var(--border);
+      background:rgba(255,255,255,.06); color:var(--text); font-size:18px; font-weight:700; cursor:pointer;
     }
-    .icon-btn:hover{border-color:var(--accent);transform:translateY(-1px)}
-
-    .drawer-body{
-      flex:1;
-      min-height:0;
-      overflow:auto;
-      -webkit-overflow-scrolling:touch;
-      overscroll-behavior:contain;
-      touch-action:pan-y;
-      padding:18px;
-      display:flex;
-      flex-direction:column;
-      gap:18px;
+    .panel-body{
+      flex:1; min-height:0; overflow-y:auto; overscroll-behavior:contain; -webkit-overflow-scrolling:touch; touch-action:pan-y;
+      padding:16px 18px calc(18px + var(--safe));
+      display:flex; flex-direction:column; gap:16px;
     }
-
-    .metric-grid{
-      display:grid;
-      grid-template-columns:repeat(2,minmax(0,1fr));
-      gap:10px;
-    }
-    .metric-card{
-      padding:14px;
-      border-radius:18px;
-      border:1px solid var(--line);
-      background:linear-gradient(180deg, rgba(255,255,255,.04), rgba(255,255,255,.02));
-    }
-    body.light-mode .metric-card{
-      background:linear-gradient(180deg, rgba(255,255,255,.95), rgba(247,250,254,.92));
-    }
-    .metric-card .k{
-      display:block;
-      font-size:12px;
-      color:var(--muted);
-      margin-bottom:6px;
-      font-weight:700;
-    }
-    .metric-card .v{
-      font-size:24px;
-      font-weight:900;
-      letter-spacing:-.03em;
-      line-height:1.05;
-    }
-    .metric-card .sub{
-      margin-top:7px;
-      font-size:12px;
-      color:var(--muted);
-    }
-
     .section{
-      padding:16px;
-      border:1px solid var(--line);
-      border-radius:22px;
-      background:linear-gradient(180deg, rgba(255,255,255,.035), rgba(255,255,255,.018));
-    }
-    body.light-mode .section{
-      background:linear-gradient(180deg, rgba(255,255,255,.98), rgba(247,250,254,.92));
-    }
-    .section-head{
-      display:flex;
-      align-items:flex-end;
-      justify-content:space-between;
-      gap:14px;
-      margin-bottom:14px;
+      border:1px solid var(--border); background:linear-gradient(180deg,var(--panel-soft), rgba(255,255,255,.02));
+      border-radius:22px; padding:16px;
     }
     .section-title{
-      font-size:16px;
-      font-weight:900;
-      letter-spacing:-.02em;
+      display:flex; align-items:center; justify-content:space-between; gap:10px;
+      font-size:13px; font-weight:900; letter-spacing:-.02em; margin-bottom:12px;
     }
-    .section-sub{
-      font-size:12px;
-      color:var(--muted);
+    .section-sub{font-size:11px; color:var(--muted); font-weight:800}
+    .hero-grid{display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:10px}
+    .hero-card{
+      padding:14px; border-radius:16px; background:rgba(255,255,255,.05); border:1px solid rgba(255,255,255,.08);
+      display:flex; flex-direction:column; gap:8px; min-width:0;
     }
-
-    .compare-row{
-      display:grid;
-      grid-template-columns:64px 1fr 90px;
-      gap:10px;
-      align-items:center;
-      margin-top:10px;
-      font-size:13px;
+    body.light-mode .hero-card{background:rgba(24,120,200,.04); border-color:rgba(17,63,109,.08)}
+    .hero-card .h-label{font-size:11px; font-weight:800; color:var(--muted); text-transform:uppercase; letter-spacing:.08em}
+    .hero-card .h-value{font-size:22px; font-weight:900; letter-spacing:-.04em; line-height:1.05}
+    .hero-card .h-meta{font-size:12px; color:var(--muted); font-weight:700}
+    .tech-list{display:flex; flex-direction:column; gap:10px}
+    .tech-row{
+      width:100%; padding:14px; text-align:left; border-radius:18px; border:1px solid var(--border); background:rgba(255,255,255,.04);
+      color:var(--text); cursor:pointer; transition:.18s ease;
     }
-    .compare-track{
-      height:14px;
-      border-radius:999px;
-      background:rgba(255,255,255,.06);
-      border:1px solid rgba(255,255,255,.05);
-      overflow:hidden;
+    .tech-row:hover,.tech-row.active{transform:translateY(-1px); border-color:rgba(135,215,255,.26); box-shadow:0 10px 24px rgba(28,89,150,.10)}
+    .tech-row-top{display:flex; align-items:flex-start; justify-content:space-between; gap:12px}
+    .tech-row-name{font-size:14px; font-weight:900; line-height:1.4; letter-spacing:-.02em}
+    .tech-row-level{font-size:12px; font-weight:900; text-align:right; white-space:nowrap}
+    .tech-row-level span{display:block; font-size:10px; color:var(--muted); margin-bottom:2px; font-weight:800; letter-spacing:.06em; text-transform:uppercase}
+    .level-track,.bar-track{
+      position:relative; height:10px; border-radius:999px; overflow:hidden; background:rgba(255,255,255,.08); margin-top:10px;
     }
-    body.light-mode .compare-track{
-      background:#eef3fa;
-      border-color:#e2eaf3;
+    .level-fill,.bar-fill{
+      position:absolute; inset:0 auto 0 0; width:0; border-radius:inherit;
+      background:linear-gradient(90deg, rgba(135,215,255,.95), rgba(224,245,255,.95));
+      box-shadow:0 0 18px rgba(135,215,255,.35);
     }
-    .compare-fill{
-      height:100%;
-      border-radius:999px;
+    body.light-mode .level-fill, body.light-mode .bar-fill{
+      background:linear-gradient(90deg, rgba(24,120,200,.95), rgba(105,178,235,.95));
+      box-shadow:none;
     }
-    .compare-value{
-      text-align:right;
-      font-weight:800;
+    .tech-row-meta,.bar-meta{
+      margin-top:8px; display:flex; justify-content:space-between; gap:12px; font-size:12px; color:var(--muted); font-weight:700; flex-wrap:wrap;
     }
-
-    .tech-list{
-      display:flex;
-      flex-direction:column;
-      gap:10px;
+    .dept-list,.project-list{display:flex; flex-direction:column; gap:10px}
+    .dept-item{
+      padding:12px 13px; border-radius:16px; background:rgba(255,255,255,.04); border:1px solid rgba(255,255,255,.06);
     }
-    .tech-card{
-      width:100%;
-      border-radius:18px;
-      border:1px solid var(--line);
-      background:rgba(255,255,255,.03);
-      color:var(--text);
-      padding:14px;
-      cursor:pointer;
-      text-align:left;
-      transition:.18s ease;
-    }
-    body.light-mode .tech-card{
-      background:#f7fbff;
-    }
-    .tech-card:hover,
-    .tech-card.active{
-      transform:translateY(-1px);
-      border-color:var(--accent);
-      box-shadow:0 12px 28px rgba(37,119,221,.10);
-    }
-    .tech-head{
-      display:flex;
-      gap:10px;
-      align-items:flex-start;
-      justify-content:space-between;
-      margin-bottom:10px;
-    }
-    .tech-name{
-      font-weight:800;
-      line-height:1.45;
-      font-size:14px;
-    }
-    .tech-level{
-      font-size:13px;
-      font-weight:900;
-      color:var(--accent);
-      flex-shrink:0;
-      white-space:nowrap;
-    }
-    .tech-bar{
-      height:12px;
-      border-radius:999px;
-      overflow:hidden;
-      background:rgba(255,255,255,.06);
-      border:1px solid rgba(255,255,255,.05);
-    }
-    body.light-mode .tech-bar{
-      background:#edf3fa;
-      border-color:#e2eaf2;
-    }
-    .tech-fill{height:100%;border-radius:999px}
-    .tech-meta{
-      margin-top:9px;
-      display:flex;
-      flex-wrap:wrap;
-      gap:7px;
-    }
-    .mini-pill{
-      padding:5px 8px;
-      border-radius:999px;
-      background:rgba(255,255,255,.05);
-      border:1px solid rgba(255,255,255,.06);
-      color:var(--muted);
-      font-size:11px;
-      font-weight:700;
-    }
-    body.light-mode .mini-pill{
-      background:#f2f6fb;
-      border-color:#e4ebf4;
-    }
-
-    .filter-row{
-      display:flex;
-      flex-wrap:wrap;
-      gap:8px;
-      margin-bottom:12px;
-    }
-    .filter-chip{
-      padding:7px 10px;
-      border-radius:999px;
-      border:1px solid var(--line);
-      background:var(--chip-bg);
-      color:var(--text);
-      cursor:pointer;
-      font-size:12px;
-      font-weight:700;
-      transition:.18s ease;
-    }
-    .filter-chip.active{border-color:var(--accent); color:var(--accent);}
-
-    .mini-bars{display:flex;flex-direction:column;gap:12px}
-    .mini-bar-row{display:grid;grid-template-columns:78px 1fr 88px;gap:10px;align-items:center}
-    .mini-bar-label{
-      font-size:12px;
-      font-weight:800;
-      color:var(--text);
-      white-space:nowrap;
-      overflow:hidden;
-      text-overflow:ellipsis;
-    }
-    .mini-bar-track{
-      height:12px;
-      border-radius:999px;
-      background:rgba(255,255,255,.06);
-      border:1px solid rgba(255,255,255,.05);
-      overflow:hidden;
-    }
-    body.light-mode .mini-bar-track{
-      background:#edf3fa;
-      border-color:#e2eaf2;
-    }
-    .mini-bar-fill{height:100%;border-radius:999px}
-    .mini-bar-value{
-      text-align:right;
-      font-size:12px;
-      font-weight:800;
-    }
-
-    .project-toolbar{
-      display:flex;
-      gap:10px;
-      align-items:center;
-      margin-bottom:12px;
-    }
-    .search-input{
-      flex:1;
-      min-width:0;
-      height:42px;
-      border-radius:12px;
-      border:1px solid var(--line);
-      background:var(--input-bg);
-      color:var(--text);
-      padding:0 14px;
-      outline:none;
-    }
-    .search-input:focus{border-color:var(--accent)}
-    .search-count{
-      font-size:12px;
-      color:var(--muted);
-      white-space:nowrap;
-      font-weight:800;
-    }
-    .project-list{
-      display:flex;
-      flex-direction:column;
-      gap:10px;
-    }
+    .dept-top{display:flex; align-items:flex-start; justify-content:space-between; gap:10px}
+    .dept-name{font-size:13px; font-weight:900}
+    .mono{font-variant-numeric:tabular-nums}
     .project-card{
-      padding:14px;
-      border-radius:18px;
-      border:1px solid var(--line);
-      background:rgba(255,255,255,.03);
+      padding:14px; border-radius:18px; border:1px solid var(--border); background:rgba(255,255,255,.03);
     }
-    body.light-mode .project-card{
-      background:#fbfdff;
+    .project-head{display:flex; justify-content:space-between; gap:10px; align-items:flex-start}
+    .project-program{font-size:14px; font-weight:900; line-height:1.38}
+    .project-ministry{
+      flex:0 0 auto; padding:6px 10px; border-radius:999px; background:rgba(255,255,255,.06); color:var(--muted);
+      font-size:11px; font-weight:900; white-space:nowrap
     }
-    .project-top{
-      display:flex;
-      gap:12px;
-      align-items:flex-start;
-      justify-content:space-between;
-      margin-bottom:7px;
+    .project-sub{margin-top:7px; font-size:12px; line-height:1.45; color:var(--muted)}
+    .project-meta{margin-top:10px; display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:8px}
+    .project-pill{
+      padding:10px 12px; border-radius:14px; background:rgba(255,255,255,.04); border:1px solid rgba(255,255,255,.06);
     }
-    .project-name{
-      font-size:14px;
-      line-height:1.5;
-      font-weight:800;
-    }
-    .project-budget{
-      font-size:14px;
-      font-weight:900;
-      color:var(--accent);
-      white-space:nowrap;
-      flex-shrink:0;
-    }
-    .project-sub{
-      font-size:12px;
-      line-height:1.55;
-      color:var(--muted);
-      margin-bottom:8px;
-    }
-    .project-compare{
-      display:flex;
-      flex-wrap:wrap;
-      gap:10px 14px;
-      font-size:11px;
-      color:var(--muted);
-    }
-    .project-compare strong{color:var(--text)}
-
-    .more-wrap{display:flex;justify-content:center;margin-top:4px}
-    .more-btn{
-      height:40px;
-      padding:0 16px;
-      border-radius:12px;
-      border:1px solid var(--line);
-      background:var(--panel-2);
-      color:var(--text);
-      cursor:pointer;
-      font-weight:800;
-    }
-
+    .project-pill .k{font-size:10px; font-weight:800; color:var(--muted); text-transform:uppercase; letter-spacing:.08em}
+    .project-pill .v{margin-top:4px; font-size:13px; font-weight:900}
     .empty{
-      padding:18px;
-      border-radius:16px;
-      border:1px dashed var(--line);
-      color:var(--muted);
-      text-align:center;
-      font-size:13px;
+      padding:16px; border-radius:16px; background:rgba(255,255,255,.03); color:var(--muted); font-size:13px; font-weight:700;
+      border:1px dashed rgba(255,255,255,.12);
     }
-
+    .note{
+      margin-bottom:12px; padding:12px 14px; border-radius:16px; border:1px solid rgba(255,255,255,.08);
+      background:rgba(135,215,255,.08); color:var(--accent-2); font-size:12px; font-weight:800; line-height:1.5;
+    }
+    body.light-mode .note{background:rgba(24,120,200,.06)}
+    .loading{
+      position:fixed; inset:0; z-index:40; display:flex; align-items:center; justify-content:center;
+      background:linear-gradient(180deg, rgba(8,22,36,.58), rgba(8,17,27,.84));
+      color:var(--text); font-size:15px; font-weight:900; letter-spacing:.02em; transition:.35s ease;
+    }
+    .loading.hidden{opacity:0; pointer-events:none}
+    .loading span{
+      padding:16px 20px; border-radius:18px; background:rgba(7,17,29,.70); border:1px solid rgba(255,255,255,.10); backdrop-filter:blur(16px);
+    }
+    .error-box{
+      position:fixed; inset:0; z-index:50; display:none; align-items:center; justify-content:center; padding:20px;
+      background:rgba(5,10,16,.74);
+    }
+    .error-box.visible{display:flex}
+    .error-card{
+      max-width:560px; padding:24px; border-radius:24px; background:var(--panel-strong); border:1px solid var(--border-strong); box-shadow:var(--shadow)
+    }
+    .error-card h2{margin:0 0 10px; font-size:22px}
+    .error-card p{margin:0; line-height:1.6; color:var(--muted)}
     @media (max-width: 1180px){
-      .header-metrics{grid-template-columns:repeat(3,minmax(0,1fr))}
-      .metric-top:nth-child(4),
-      .metric-top:nth-child(5){display:none}
+      .topbar{grid-template-columns:1fr; gap:12px}
+      .controls{min-width:unset}
+      .search-wrap{top:284px}
     }
-    @media (max-width: 820px){
-      body{overflow:auto}
-      .app{height:auto;min-height:100vh}
-      .topbar{
-        height:auto;
-        padding:16px;
-        align-items:flex-start;
-        flex-wrap:wrap;
+    @media (max-width: 900px){
+      :root{--topbar-h:158px}
+      .topbar{left:12px; right:12px; top:12px}
+      .brand{min-height:unset}
+      .summary{grid-template-columns:repeat(2,minmax(0,1fr))}
+      .controls{padding:10px}
+      .controls-row{display:grid; grid-template-columns:repeat(3,minmax(0,1fr))}
+      .search-wrap{top:auto; left:12px; right:12px; transform:none; width:auto; bottom:20px}
+      .panel{
+        left:12px; right:12px; width:auto; top:auto; bottom:12px; max-height:72vh;
+        transform:translateY(calc(100% + 16px));
       }
-      .brand{min-width:0}
-      .title{font-size:22px}
-      .header-metrics{grid-template-columns:repeat(2,minmax(0,1fr));width:100%}
-      .workspace{padding:12px;height:calc(100vh - var(--header-h));min-height:620px}
-      .sector-strip{max-width:100%}
-      .scene-ambient{align-items:flex-start;flex-direction:column}
-      .drawer{
-        top:auto;
-        left:10px;
-        right:10px;
-        bottom:10px;
-        width:auto;
-        height:min(82vh, 920px);
-        border-radius:24px;
-      }
-      .metric-grid{grid-template-columns:1fr 1fr}
+      body.panel-open .panel{transform:translateY(0)}
+      .panel-shell{border-radius:28px}
+      .hero-grid{grid-template-columns:1fr}
+      .project-meta{grid-template-columns:1fr}
+      .sector-label{min-width:104px; max-width:134px; padding:8px 10px 9px}
+      .sector-label .name{font-size:12px}
+      .sector-label .meta{font-size:10px}
     }
+    @media (max-width: 640px){
+      .summary{grid-template-columns:1fr 1fr}
+      .metric .value{font-size:18px}
+      .search-box{height:52px}
+      .search-input{font-size:14px}
+      .panel-head{padding:16px 16px 12px}
+      .panel-title{font-size:23px}
+      .panel-body{padding:14px 16px calc(16px + var(--safe))}
+      .section{padding:14px}
+      .controls-row{grid-template-columns:1fr}
+    }
+    ::-webkit-scrollbar{width:8px;height:8px}
+    ::-webkit-scrollbar-thumb{background:rgba(255,255,255,.16); border-radius:999px}
+    body.light-mode ::-webkit-scrollbar-thumb{background:rgba(17,63,109,.18)}
   </style>
 </head>
 <body>
-  <div class="app">
-    <header class="topbar">
-      <div class="brand">
-        <div class="eyebrow">Korea Strategic Tech</div>
-        <div class="title">국가전략기술 Strategic Map 3D</div>
-      </div>
-      <div class="header-metrics">
-        <div class="metric-top">
-          <div class="v" id="kpi2026">8.61</div>
-          <div class="k">2026 총예산(조원)</div>
-        </div>
-        <div class="metric-top">
-          <div class="v" id="kpi2025">6.52</div>
-          <div class="k">2025 비교예산(조원)</div>
-        </div>
-        <div class="metric-top">
-          <div class="v" id="kpiSectors">12</div>
-          <div class="k">전략기술 분야</div>
-        </div>
-        <div class="metric-top">
-          <div class="v" id="kpiTechs">50</div>
-          <div class="k">세부 중점기술</div>
-        </div>
-        <div class="metric-top">
-          <div class="v" id="kpiProjects">1,516</div>
-          <div class="k">관련사업</div>
-        </div>
-      </div>
-      <div class="header-actions">
-        <button id="themeToggle" class="action-btn" type="button">☀️ 라이트</button>
-        <button id="resetViewBtn" class="action-btn" type="button">전체 보기</button>
-      </div>
-    </header>
+  <div id="app">
+    <canvas id="sceneCanvas" aria-label="국가전략기술 3D 지도"></canvas>
+    <div class="screen-grad"></div>
 
-    <main class="workspace">
-      <section class="stage-card">
-        <div class="stage-head">
-          <div id="statusCard" class="status-card"></div>
-        </div>
-
-        <div class="scene-wrap" id="sceneWrap">
-          <canvas id="sceneCanvas"></canvas>
-          <div id="labelLayer" class="label-layer"></div>
-          <div id="errorBanner" class="error-banner"></div>
-        </div>
-
-        <div class="scene-ambient">
-          <div class="sector-strip" id="sectorStrip"></div>
+    <div class="topbar">
+      <section class="brand glass">
+        <div class="eyebrow">Korea Strategic Technology</div>
+        <div class="title-row">
+          <h1>국가전략기술 3D 맵</h1>
+          <div class="chip">면적 = 2026 예산 · 높이 = 기술수준</div>
         </div>
       </section>
-    </main>
 
-    <aside id="drawer" class="drawer" aria-hidden="true"></aside>
-    <div id="backdrop" class="backdrop"></div>
+      <section class="summary glass">
+        <div class="metric">
+          <div class="label">전략기술 분야</div>
+          <div class="value" id="sumSectorCount">12</div>
+        </div>
+        <div class="metric">
+          <div class="label">세부 중점기술</div>
+          <div class="value" id="sumTechCount">50</div>
+        </div>
+        <div class="metric">
+          <div class="label">2026 총예산</div>
+          <div class="value" id="sumBudget26">8.61조원</div>
+        </div>
+        <div class="metric">
+          <div class="label">2025 비교</div>
+          <div class="value" id="sumBudget25">6.52조원</div>
+        </div>
+      </section>
+
+      <section class="controls glass">
+        <div class="controls-row">
+          <button class="action-btn" id="resetViewBtn" type="button">시점 초기화</button>
+          <button class="action-btn" id="rotateBtn" type="button">자동회전 켜짐</button>
+          <button class="action-btn" id="themeBtn" type="button">☀️ 라이트</button>
+        </div>
+      </section>
+    </div>
+
+    <div class="search-wrap">
+      <div class="search-box glass">
+        <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M10.5 18a7.5 7.5 0 1 1 5.303-12.803A7.5 7.5 0 0 1 10.5 18Zm8 2-4.35-4.35" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+        <input id="searchInput" class="search-input" list="searchList" placeholder="분야명 또는 세부 중점기술 검색" autocomplete="off"/>
+        <datalist id="searchList"></datalist>
+      </div>
+    </div>
+
+    <div class="labels-layer" id="labelsLayer"></div>
+
+    <div class="tooltip" id="tooltip">
+      <div class="tooltip-title" id="tooltipTitle"></div>
+      <div class="tooltip-sub" id="tooltipSub"></div>
+    </div>
+
+    <aside class="panel" id="detailPanel" aria-live="polite">
+      <div class="panel-shell glass">
+        <div class="panel-head">
+          <div class="panel-title-wrap">
+            <div class="panel-kicker" id="panelKicker">전략기술 분야</div>
+            <div class="panel-title" id="panelTitle">분야를 선택하세요</div>
+            <div class="panel-subtitle" id="panelSubtitle">3D 맵에서 분야 또는 타워를 클릭하면 세부 정보가 표시됩니다.</div>
+          </div>
+          <button class="icon-btn" id="panelCloseBtn" type="button" aria-label="패널 닫기">×</button>
+        </div>
+        <div class="panel-body" id="panelBody"></div>
+      </div>
+    </aside>
+
+
+    <div class="loading" id="loading"><span>3D 맵을 준비하고 있습니다…</span></div>
+    <div class="error-box" id="errorBox">
+      <div class="error-card">
+        <h2>지도를 불러오지 못했습니다.</h2>
+        <p id="errorText">data.js 또는 3D 스크립트 로딩을 확인해주세요.</p>
+      </div>
+    </div>
   </div>
 
+
+  <script>
+    window.__strategicMapBooted = false;
+    window.addEventListener('DOMContentLoaded', () => {
+      setTimeout(() => {
+        if (window.__strategicMapBooted) return;
+        const loading = document.getElementById('loading');
+        const errorBox = document.getElementById('errorBox');
+        const errorText = document.getElementById('errorText');
+        if (loading) loading.classList.add('hidden');
+        if (errorBox) errorBox.classList.add('visible');
+        if (errorText) errorText.textContent = '3D 라이브러리를 불러오지 못했습니다. data.js와 index.html이 같은 폴더에 있는지, 그리고 외부 CDN 접근이 가능한지 확인해주세요.';
+      }, 8000);
+    });
+  </script>
+
+  <script type="importmap">
+    {
+      "imports": {
+        "three": "https://cdn.jsdelivr.net/npm/three@0.160.1/build/three.module.js",
+        "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.1/examples/jsm/"
+      }
+    }
+  </script>
+
   <script type="module">
-    const RAW = window.STRATEGIC_MAP_DATA || window.STRATEGIC_TECH_DATA;
-    const drawer = document.getElementById('drawer');
-    const backdrop = document.getElementById('backdrop');
-    const labelLayer = document.getElementById('labelLayer');
-    const errorBanner = document.getElementById('errorBanner');
-    const sectorStrip = document.getElementById('sectorStrip');
-    const statusCard = document.getElementById('statusCard');
-    const themeToggle = document.getElementById('themeToggle');
-    const resetViewBtn = document.getElementById('resetViewBtn');
-    const sceneWrap = document.getElementById('sceneWrap');
+    import * as THREE from "three";
+    import { OrbitControls } from "three/addons/controls/OrbitControls.js";
+
+    const DATA = window.STRATEGIC_TECH_DATA;
+    const app = document.getElementById('app');
     const canvas = document.getElementById('sceneCanvas');
+    const labelsLayer = document.getElementById('labelsLayer');
+    const tooltip = document.getElementById('tooltip');
+    const tooltipTitle = document.getElementById('tooltipTitle');
+    const tooltipSub = document.getElementById('tooltipSub');
+    const loading = document.getElementById('loading');
+    const errorBox = document.getElementById('errorBox');
+    const errorText = document.getElementById('errorText');
+    const panel = document.getElementById('detailPanel');
+    const panelBody = document.getElementById('panelBody');
+    const panelKicker = document.getElementById('panelKicker');
+    const panelTitle = document.getElementById('panelTitle');
+    const panelSubtitle = document.getElementById('panelSubtitle');
+    const searchInput = document.getElementById('searchInput');
+    const searchList = document.getElementById('searchList');
+    const themeBtn = document.getElementById('themeBtn');
+    const rotateBtn = document.getElementById('rotateBtn');
+    const resetViewBtn = document.getElementById('resetViewBtn');
 
+    if (!DATA || !Array.isArray(DATA.sectors)) {
+      showError('data.js 구조를 찾을 수 없습니다. index.html과 data.js를 같은 폴더에 두고 다시 열어주세요.');
+      throw new Error('STRATEGIC_TECH_DATA not found');
+    }
+
+    document.getElementById('sumSectorCount').textContent = `${DATA.meta.sectorCount}개`;
+    document.getElementById('sumTechCount').textContent = `${DATA.meta.detailTechCount}개`;
+    document.getElementById('sumBudget26').textContent = formatBudgetTrillion(DATA.meta.displayTotalBudgetTrillion2026);
+    document.getElementById('sumBudget25').textContent = formatBudgetTrillion(DATA.meta.displayTotalBudgetTrillion2025);
+
+    const STORAGE_KEY = 'strategic-map-theme';
     const state = {
-      selectedSectorId: null,
-      hoverSectorId: null,
-      focusFilter: 'ALL',
-      projectQuery: '',
-      projectLimit: 18,
-      theme: localStorage.getItem('strategic-map-theme') === 'light' ? 'light' : 'dark'
+      theme: getPreferredTheme(),
+      autoRotate: true,
+      selection: null,
+      hover: null,
+      started: false,
     };
 
-    const SHORT_CODES = {
-      '인공지능':'AI',
-      '첨단바이오':'바이오',
-      '양자':'양자',
-      '우주항공해양':'우주항공해양',
-      '반도체/디스플레이':'반도체/디스플레이',
-      '첨단모빌리티':'첨단모빌리티',
-      '첨단로봇제조':'첨단로봇제조',
-      '차세대통신':'차세대통신',
-      '수소':'수소',
-      '차세대원자력':'차세대원자력',
-      '이차전지':'이차전지',
-      '사이버보안':'사이버보안'
+    const sceneObjects = {
+      foundations: new Map(),
+      sectorTowers: new Map(),
+      techs: new Map(),
+      labels: [],
+      materials: [],
+      edges: [],
+      glowRings: [],
+      floor: null,
+      floorGrid: null,
+      skyline: [],
+      ambient: null,
+      hemi: null,
+      sun: null,
+      fill: null,
     };
 
-    const LABEL_LINES = {
-      '우주항공해양':['우주항공해양'],
-      '반도체/디스플레이':['반도체','디스플레이'],
-      '첨단로봇제조':['첨단로봇','제조'],
-      '차세대통신':['차세대','통신'],
-      '차세대원자력':['차세대','원자력']
-    };
+    const interactive = [];
+    const raycaster = new THREE.Raycaster();
+    const pointer = new THREE.Vector2();
+    let renderer, scene, camera, controls;
+    let hoveredRef = null;
+    let pointerClient = { x: 0, y: 0 };
+    const worldCenter = new THREE.Vector3(0, 0, 0);
 
-    function num(v){
-      const n = Number(v);
-      return Number.isFinite(n) ? n : 0;
+    init();
+    window.__strategicMapBooted = true;
+
+    function init(){
+      populateSearch();
+      applyTheme(state.theme, false);
+      initScene();
+      renderInitialPanel();
+      bindUI();
+      requestAnimationFrame(() => loading.classList.add('hidden'));
+    }
+
+    function bindUI(){
+      document.getElementById('panelCloseBtn').addEventListener('click', closePanel);
+      themeBtn.addEventListener('click', () => {
+        const next = document.body.classList.contains('light-mode') ? 'dark' : 'light';
+        applyTheme(next, true);
+      });
+      rotateBtn.addEventListener('click', () => {
+        state.autoRotate = !state.autoRotate;
+        controls.autoRotate = state.autoRotate;
+        rotateBtn.textContent = state.autoRotate ? '자동회전 켜짐' : '자동회전 꺼짐';
+      });
+      resetViewBtn.addEventListener('click', resetView);
+      searchInput.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') {
+          e.preventDefault();
+          performSearch(searchInput.value);
+        }
+      });
+      searchInput.addEventListener('change', () => performSearch(searchInput.value));
+      labelsLayer.addEventListener('click', (e) => {
+        const label = e.target.closest('[data-sector-id]');
+        if (!label) return;
+        const sectorId = Number(label.dataset.sectorId);
+        selectSector(sectorId);
+      });
+
+      window.addEventListener('resize', onResize);
+      canvas.addEventListener('pointermove', onPointerMove);
+      canvas.addEventListener('pointerleave', clearHover);
+      canvas.addEventListener('click', onPointerClick);
+    }
+
+    function initScene(){
+      renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true });
+      renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+      renderer.setSize(window.innerWidth, window.innerHeight);
+      renderer.outputColorSpace = THREE.SRGBColorSpace;
+      renderer.shadowMap.enabled = true;
+      renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+      renderer.toneMapping = THREE.ACESFilmicToneMapping;
+      renderer.toneMappingExposure = document.body.classList.contains('light-mode') ? 1.08 : 1.14;
+
+      scene = new THREE.Scene();
+      scene.fog = new THREE.FogExp2(getThemePalette().fog, 0.010);
+
+      camera = new THREE.PerspectiveCamera(42, window.innerWidth / window.innerHeight, 0.1, 340);
+      camera.position.set(0, 54, 102);
+
+      controls = new OrbitControls(camera, canvas);
+      controls.enableDamping = true;
+      controls.dampingFactor = 0.05;
+      controls.enablePan = false;
+      controls.minDistance = 54;
+      controls.maxDistance = 150;
+      controls.minPolarAngle = Math.PI / 5.2;
+      controls.maxPolarAngle = Math.PI / 2.08;
+      controls.target.set(0, 8, 2);
+      controls.autoRotate = state.autoRotate;
+      controls.autoRotateSpeed = 0.5;
+      controls.addEventListener('start', () => {
+        state.autoRotate = false;
+        controls.autoRotate = false;
+        rotateBtn.textContent = '자동회전 꺼짐';
+      });
+
+      buildLights();
+      buildWorld();
+      buildSectorMap();
+      onResize();
+      state.started = true;
+      animate();
+    }
+
+    function buildLights(){
+      const palette = getThemePalette();
+      sceneObjects.ambient = new THREE.AmbientLight(palette.ambientColor, palette.ambientIntensity);
+      scene.add(sceneObjects.ambient);
+
+      sceneObjects.hemi = new THREE.HemisphereLight(palette.skyColor, palette.groundColor, palette.hemiIntensity);
+      scene.add(sceneObjects.hemi);
+
+      sceneObjects.sun = new THREE.DirectionalLight(palette.sunColor, palette.sunIntensity);
+      sceneObjects.sun.position.set(34, 58, 24);
+      sceneObjects.sun.castShadow = true;
+      sceneObjects.sun.shadow.mapSize.set(2048, 2048);
+      sceneObjects.sun.shadow.camera.near = 10;
+      sceneObjects.sun.shadow.camera.far = 180;
+      sceneObjects.sun.shadow.camera.left = -70;
+      sceneObjects.sun.shadow.camera.right = 70;
+      sceneObjects.sun.shadow.camera.top = 70;
+      sceneObjects.sun.shadow.camera.bottom = -70;
+      scene.add(sceneObjects.sun);
+
+      sceneObjects.fill = new THREE.PointLight(palette.fillColor, palette.fillIntensity, 220);
+      sceneObjects.fill.position.set(-42, 24, -18);
+      scene.add(sceneObjects.fill);
+    }
+
+    function buildWorld(){
+      const palette = getThemePalette();
+      const floorGroup = new THREE.Group();
+
+      const floorGeo = new THREE.CircleGeometry(108, 96);
+      const floorMat = new THREE.MeshPhongMaterial({
+        color: palette.floor,
+        specular: palette.floorSpec,
+        shininess: document.body.classList.contains('light-mode') ? 30 : 60,
+        transparent: true,
+        opacity: document.body.classList.contains('light-mode') ? 0.78 : 0.90,
+      });
+      const floor = new THREE.Mesh(floorGeo, floorMat);
+      floor.rotation.x = -Math.PI / 2;
+      floor.receiveShadow = true;
+      floor.position.y = -0.05;
+      floorGroup.add(floor);
+      sceneObjects.floor = floor;
+
+      const grid = new THREE.GridHelper(140, 28, palette.grid, palette.grid);
+      grid.position.y = 0.02;
+      grid.material.transparent = true;
+      grid.material.opacity = document.body.classList.contains('light-mode') ? 0.13 : 0.18;
+      floorGroup.add(grid);
+      sceneObjects.floorGrid = grid;
+
+      const ringMaterial = new THREE.MeshBasicMaterial({ color: palette.ring, transparent: true, opacity: 0.10 });
+      [26, 48, 72, 96].forEach((radius, idx) => {
+        const ring = new THREE.Mesh(new THREE.RingGeometry(radius - 0.28, radius, 96), ringMaterial.clone());
+        ring.rotation.x = -Math.PI / 2;
+        ring.position.y = 0.03 + idx * 0.002;
+        ring.material.opacity = idx === 0 ? 0.14 : 0.08;
+        floorGroup.add(ring);
+      });
+
+      scene.add(floorGroup);
+
+      buildSkyline();
+      buildParticles();
+    }
+
+    function buildSkyline(){
+      const skyline = new THREE.Group();
+      const palette = getThemePalette();
+      const mat = new THREE.MeshPhongMaterial({
+        color: palette.skyline,
+        transparent: true,
+        opacity: document.body.classList.contains('light-mode') ? 0.34 : 0.26,
+        shininess: 25,
+      });
+      const geomCache = new Map();
+      const count = 90;
+      for (let i = 0; i < count; i += 1){
+        const angle = (i / count) * Math.PI * 2;
+        const radius = 74 + (i % 7) * 4 + ((i * 13) % 9);
+        const height = 6 + ((i * 17) % 16);
+        const width = 1.4 + ((i * 7) % 4) * 0.7;
+        const depth = 1.2 + ((i * 11) % 4) * 0.6;
+        const key = `${width.toFixed(2)}:${height.toFixed(2)}:${depth.toFixed(2)}`;
+        const geo = geomCache.get(key) || (() => {
+          const g = new THREE.BoxGeometry(width, height, depth);
+          geomCache.set(key, g);
+          return g;
+        })();
+        const mesh = new THREE.Mesh(geo, mat.clone());
+        mesh.position.set(Math.cos(angle) * radius, height / 2, Math.sin(angle) * radius);
+        skyline.add(mesh);
+        sceneObjects.skyline.push(mesh);
+      }
+      scene.add(skyline);
+    }
+
+    function buildParticles(){
+      const particleCount = 220;
+      const positions = new Float32Array(particleCount * 3);
+      for (let i = 0; i < particleCount; i += 1){
+        const radius = 42 + Math.random() * 54;
+        const angle = Math.random() * Math.PI * 2;
+        positions[i * 3] = Math.cos(angle) * radius;
+        positions[i * 3 + 1] = 8 + Math.random() * 34;
+        positions[i * 3 + 2] = Math.sin(angle) * radius;
+      }
+      const geometry = new THREE.BufferGeometry();
+      geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+      const material = new THREE.PointsMaterial({
+        color: document.body.classList.contains('light-mode') ? 0x6fa8d8 : 0x9ee7ff,
+        size: document.body.classList.contains('light-mode') ? 0.55 : 0.85,
+        transparent: true,
+        opacity: document.body.classList.contains('light-mode') ? 0.18 : 0.30,
+        depthWrite: false
+      });
+      const points = new THREE.Points(geometry, material);
+      scene.add(points);
+    }
+
+    function buildSectorMap(){
+      const positions = [
+        new THREE.Vector3(-16, 0, 2),  new THREE.Vector3(12, 0, 2),
+        new THREE.Vector3(-14, 0, -26), new THREE.Vector3(14, 0, -26),
+        new THREE.Vector3(-40, 0, 2), new THREE.Vector3(38, 0, 2),
+        new THREE.Vector3(-14, 0, 30), new THREE.Vector3(14, 0, 30),
+        new THREE.Vector3(-40, 0, -24), new THREE.Vector3(40, 0, -24),
+        new THREE.Vector3(-38, 0, 30), new THREE.Vector3(38, 0, 30),
+      ];
+      const sectorsByBudget = [...DATA.sectors].sort((a, b) => b.budgetTrillion2026 - a.budgetTrillion2026);
+      const maxBudget = Math.max(...DATA.sectors.map(s => s.budgetTrillion2026));
+      const maxTechBudget = Math.max(
+        1,
+        ...DATA.sectors.flatMap(sector => sector.detailTechs.map(tech => tech.budgetMillion2026 || 0))
+      );
+
+      sectorsByBudget.forEach((sector, index) => {
+        const position = positions[index] || new THREE.Vector3(index * 8, 0, 0);
+        const group = new THREE.Group();
+        group.position.copy(position);
+        scene.add(group);
+
+        const baseColor = new THREE.Color(sector.color);
+        const radius = 5.2 + Math.sqrt(sector.budgetTrillion2026 / maxBudget) * 5.4;
+        const baseHeight = 2.0 + (sector.budgetTrillion2026 / maxBudget) * 2.0;
+        const plateHeight = 1.1;
+
+        const foundation = createFoundation(radius, baseHeight, baseColor, sector);
+        group.add(foundation.mesh);
+        group.add(foundation.top);
+        group.add(foundation.ring);
+        foundation.mesh.userData = { type: 'sector', sectorId: sector.id };
+        foundation.top.userData = { type: 'sector', sectorId: sector.id };
+        foundation.ring.userData = { type: 'sector', sectorId: sector.id };
+        interactive.push(foundation.mesh, foundation.top);
+
+        const heroHeight = 14 + sector.techLevelPct * 0.55;
+        const heroGeo = new THREE.BoxGeometry(radius * 0.34, heroHeight, radius * 0.34);
+        const heroMats = createTowerMaterials(baseColor, 1.06);
+        const hero = new THREE.Mesh(heroGeo, heroMats);
+        hero.position.set(0, baseHeight + plateHeight + heroHeight / 2, 0);
+        hero.castShadow = true;
+        hero.receiveShadow = true;
+        hero.userData = { type: 'sector', sectorId: sector.id };
+        group.add(hero);
+        interactive.push(hero);
+
+        const heroEdges = createEdge(heroGeo, paletteLineColor(baseColor, 0.95));
+        heroEdges.position.copy(hero.position);
+        group.add(heroEdges);
+
+        const detailGroup = new THREE.Group();
+        detailGroup.position.y = baseHeight + plateHeight;
+        group.add(detailGroup);
+
+        const detailSorted = [...sector.detailTechs].sort((a, b) => {
+          const budgetA = a.budgetMillion2026 || 0;
+          const budgetB = b.budgetMillion2026 || 0;
+          if (budgetA !== budgetB) return budgetB - budgetA;
+          return b.techLevelPct - a.techLevelPct;
+        });
+
+        detailSorted.forEach((tech, techIndex) => {
+          const share = Math.max(0.12, (tech.budgetMillion2026 || (sector.budgetTrillion2026 * 100000)) / Math.max(maxTechBudget, 1));
+          const footprint = clamp(1.2 + Math.sqrt(share) * 1.8, 1.15, radius * 0.32);
+          const depth = clamp(footprint * (0.84 + seeded(sector.id * 13 + techIndex) * 0.44), 1.05, radius * 0.34);
+          const height = 7 + tech.techLevelPct * 0.34;
+          const point = spiralPoint(techIndex, detailSorted.length, radius * 0.67, sector.id);
+          const geo = new THREE.BoxGeometry(footprint, height, depth);
+          const mesh = new THREE.Mesh(geo, createTowerMaterials(baseColor, 0.98));
+          mesh.position.set(point.x, height / 2, point.z);
+          mesh.castShadow = true;
+          mesh.receiveShadow = true;
+          mesh.userData = { type: 'tech', sectorId: sector.id, techName: tech.name };
+          detailGroup.add(mesh);
+          interactive.push(mesh);
+
+          const edge = createEdge(geo, paletteLineColor(baseColor, 0.72));
+          edge.position.copy(mesh.position);
+          detailGroup.add(edge);
+
+          sceneObjects.techs.set(`${sector.id}::${tech.name}`, { mesh, edge, tech, sector, group: detailGroup });
+        });
+
+        const labelEl = buildLabel(sector);
+        labelsLayer.appendChild(labelEl);
+        sceneObjects.labels.push({ el: labelEl, sectorId: sector.id, object: hero });
+
+        sceneObjects.foundations.set(sector.id, {
+          sector, group, radius, baseHeight, foundation: foundation.mesh, top: foundation.top,
+          ring: foundation.ring, hero, heroEdges, labelEl
+        });
+        sceneObjects.sectorTowers.set(sector.id, hero);
+      });
+    }
+
+    function createFoundation(radius, baseHeight, color, sector){
+      const sideGeo = new THREE.CylinderGeometry(radius * 1.06, radius * 1.14, baseHeight, 56, 1, false);
+      const sideMat = new THREE.MeshPhongMaterial({
+        color: color.clone().multiplyScalar(document.body.classList.contains('light-mode') ? 0.88 : 0.54),
+        specular: document.body.classList.contains('light-mode') ? 0xbfd8ef : 0x203348,
+        shininess: document.body.classList.contains('light-mode') ? 24 : 40,
+        transparent: true,
+        opacity: document.body.classList.contains('light-mode') ? 0.94 : 0.96
+      });
+      const side = new THREE.Mesh(sideGeo, sideMat);
+      side.castShadow = true;
+      side.receiveShadow = true;
+      side.position.y = baseHeight / 2;
+
+      const topGeo = new THREE.CylinderGeometry(radius, radius * 1.02, 1.10, 56);
+      const topMat = new THREE.MeshPhongMaterial({
+        color: color.clone().lerp(new THREE.Color(0xffffff), document.body.classList.contains('light-mode') ? 0.26 : 0.18),
+        specular: document.body.classList.contains('light-mode') ? 0xffffff : 0xd9eefc,
+        shininess: document.body.classList.contains('light-mode') ? 40 : 80,
+        transparent: true,
+        opacity: document.body.classList.contains('light-mode') ? 0.97 : 0.95
+      });
+      const top = new THREE.Mesh(topGeo, topMat);
+      top.position.y = baseHeight + 0.55;
+      top.castShadow = true;
+      top.receiveShadow = true;
+
+      const ring = new THREE.Mesh(
+        new THREE.RingGeometry(radius * 1.02, radius * 1.10, 56),
+        new THREE.MeshBasicMaterial({ color: color.clone().lerp(new THREE.Color(0xffffff), 0.12), transparent: true, opacity: document.body.classList.contains('light-mode') ? 0.24 : 0.18 })
+      );
+      ring.rotation.x = -Math.PI / 2;
+      ring.position.y = baseHeight + 1.12;
+
+      sceneObjects.materials.push(sideMat, topMat, ring.material);
+      sceneObjects.glowRings.push(ring);
+      return { mesh: side, top, ring };
+    }
+
+    function createTowerMaterials(baseColor, intensity = 1){
+      const sideColor = baseColor.clone().lerp(new THREE.Color(0xffffff), document.body.classList.contains('light-mode') ? 0.18 : 0.10);
+      const topColor = baseColor.clone().lerp(new THREE.Color(0xffffff), document.body.classList.contains('light-mode') ? 0.42 : 0.26);
+      const sideTexture = createWindowTexture(sideColor, intensity);
+      const sideMat = new THREE.MeshStandardMaterial({
+        color: sideColor,
+        map: sideTexture,
+        emissive: sideColor.clone().lerp(new THREE.Color(0xffffff), 0.45),
+        emissiveMap: sideTexture,
+        emissiveIntensity: document.body.classList.contains('light-mode') ? 0.08 : 0.15,
+        roughness: document.body.classList.contains('light-mode') ? 0.52 : 0.38,
+        metalness: document.body.classList.contains('light-mode') ? 0.06 : 0.16
+      });
+      const topMat = new THREE.MeshStandardMaterial({
+        color: topColor,
+        roughness: 0.22,
+        metalness: 0.18,
+        emissive: baseColor.clone().lerp(new THREE.Color(0xffffff), 0.14),
+        emissiveIntensity: document.body.classList.contains('light-mode') ? 0.03 : 0.07
+      });
+      const bottomMat = new THREE.MeshStandardMaterial({ color: sideColor.clone().multiplyScalar(0.82), roughness: 0.66, metalness: 0.04 });
+      sceneObjects.materials.push(sideMat, topMat, bottomMat);
+      return [sideMat, sideMat, topMat, bottomMat, sideMat, sideMat];
+    }
+
+    function createWindowTexture(color, intensity){
+      const canvas = document.createElement('canvas');
+      canvas.width = 128;
+      canvas.height = 256;
+      const ctx = canvas.getContext('2d');
+      const rgb = colorToRgb(color);
+      ctx.fillStyle = `rgb(${Math.round(rgb.r * 255 * 0.50)}, ${Math.round(rgb.g * 255 * 0.52)}, ${Math.round(rgb.b * 255 * 0.58)})`;
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+      const cols = 7;
+      const rows = 15;
+      const cellW = canvas.width / cols;
+      const cellH = canvas.height / rows;
+
+      for (let y = 0; y < rows; y += 1){
+        for (let x = 0; x < cols; x += 1){
+          const lit = ((x * 17 + y * 23 + Math.round(intensity * 100)) % 5) !== 0;
+          const alpha = lit ? (document.body.classList.contains('light-mode') ? 0.16 : 0.30) : (document.body.classList.contains('light-mode') ? 0.04 : 0.08);
+          ctx.fillStyle = `rgba(255,255,255,${alpha})`;
+          ctx.fillRect(x * cellW + 3, y * cellH + 3, cellW - 6, cellH - 7);
+        }
+      }
+      ctx.strokeStyle = document.body.classList.contains('light-mode') ? 'rgba(255,255,255,.18)' : 'rgba(255,255,255,.12)';
+      ctx.lineWidth = 2;
+      for (let x = 1; x < cols; x += 1){
+        ctx.beginPath();
+        ctx.moveTo(x * cellW, 0);
+        ctx.lineTo(x * cellW, canvas.height);
+        ctx.stroke();
+      }
+      for (let y = 1; y < rows; y += 1){
+        ctx.beginPath();
+        ctx.moveTo(0, y * cellH);
+        ctx.lineTo(canvas.width, y * cellH);
+        ctx.stroke();
+      }
+      const tex = new THREE.CanvasTexture(canvas);
+      tex.colorSpace = THREE.SRGBColorSpace;
+      return tex;
+    }
+
+    function createEdge(geometry, color){
+      const edge = new THREE.LineSegments(
+        new THREE.EdgesGeometry(geometry),
+        new THREE.LineBasicMaterial({ color, transparent: true, opacity: document.body.classList.contains('light-mode') ? 0.28 : 0.18 })
+      );
+      sceneObjects.edges.push(edge);
+      return edge;
+    }
+
+    function buildLabel(sector){
+      const el = document.createElement('button');
+      el.type = 'button';
+      el.className = 'sector-label';
+      el.dataset.sectorId = String(sector.id);
+      el.innerHTML = `
+        <div class="name">${sector.labelLines.map(escapeHtml).join('<br>')}</div>
+        <div class="meta">${formatBudgetTrillion(sector.budgetTrillion2026)}</div>
+      `;
+      return el;
+    }
+
+    function animate(){
+      requestAnimationFrame(animate);
+      controls.update();
+      if (state.autoRotate) {
+        controls.autoRotate = true;
+      }
+      updateHoverVisuals();
+      updateLabels();
+      updateTooltipPosition();
+      renderer.render(scene, camera);
+    }
+
+    function updateLabels(){
+      const width = window.innerWidth;
+      const height = window.innerHeight;
+      sceneObjects.labels.forEach(entry => {
+        const pos = entry.object.getWorldPosition(new THREE.Vector3()).clone();
+        pos.y += 8;
+        const projected = pos.project(camera);
+        const visible = projected.z < 1 && projected.z > -1 && Math.abs(projected.x) < 1.15 && Math.abs(projected.y) < 1.15;
+        if (!visible){
+          entry.el.style.display = 'none';
+          return;
+        }
+        entry.el.style.display = 'block';
+        entry.el.style.left = `${(projected.x * 0.5 + 0.5) * width}px`;
+        entry.el.style.top = `${(-projected.y * 0.5 + 0.5) * height}px`;
+        const active = state.selection && Number(state.selection.sectorId) === Number(entry.sectorId);
+        entry.el.classList.toggle('active', !!active);
+      });
+    }
+
+    function onResize(){
+      if (!renderer || !camera) return;
+      camera.aspect = window.innerWidth / window.innerHeight;
+      camera.updateProjectionMatrix();
+      renderer.setSize(window.innerWidth, window.innerHeight);
+    }
+
+    function onPointerMove(event){
+      pointerClient.x = event.clientX;
+      pointerClient.y = event.clientY;
+      const hit = raycast(event);
+      if (!hit) {
+        hoveredRef = null;
+        tooltip.classList.remove('visible');
+        return;
+      }
+      hoveredRef = hit.object.userData;
+      const html = buildTooltip(hoveredRef);
+      if (!html) {
+        tooltip.classList.remove('visible');
+        return;
+      }
+      tooltipTitle.textContent = html.title;
+      tooltipSub.innerHTML = html.sub;
+      tooltip.classList.add('visible');
+    }
+
+    function onPointerClick(event){
+      const hit = raycast(event);
+      if (!hit) return;
+      const meta = hit.object.userData;
+      if (meta.type === 'tech') {
+        selectTech(meta.sectorId, meta.techName);
+      } else if (meta.type === 'sector') {
+        selectSector(meta.sectorId);
+      }
+    }
+
+    function clearHover(){
+      hoveredRef = null;
+      tooltip.classList.remove('visible');
+    }
+
+    function raycast(event){
+      const rect = renderer.domElement.getBoundingClientRect();
+      pointer.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
+      pointer.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
+      raycaster.setFromCamera(pointer, camera);
+      const hits = raycaster.intersectObjects(interactive, false);
+      return hits[0] || null;
+    }
+
+    function updateHoverVisuals(){
+      sceneObjects.foundations.forEach((entry, sectorId) => {
+        const selected = state.selection && Number(state.selection.sectorId) === Number(sectorId);
+        const hovered = hoveredRef && Number(hoveredRef.sectorId) === Number(sectorId);
+        const foundationMats = [entry.foundation.material, entry.top.material];
+        foundationMats.forEach(mat => {
+          if (!mat) return;
+          mat.emissive = mat.emissive || new THREE.Color(0x000000);
+          mat.emissive.set(entry.sector.color);
+          mat.emissiveIntensity = selected ? 0.16 : hovered ? 0.08 : 0.0;
+        });
+        entry.ring.material.opacity = selected ? 0.42 : hovered ? 0.24 : (document.body.classList.contains('light-mode') ? 0.24 : 0.18);
+        entry.ring.scale.setScalar(selected ? 1.035 : 1.0);
+
+        const hero = entry.hero;
+        const materials = Array.isArray(hero.material) ? hero.material : [hero.material];
+        materials.forEach((mat, idx) => {
+          if (!mat) return;
+          mat.emissive = mat.emissive || new THREE.Color(0x000000);
+          mat.emissive.set(selected ? 0xffffff : entry.sector.color);
+          mat.emissiveIntensity = selected ? 0.20 : hovered ? 0.10 : (idx === 2 ? 0.06 : 0.10);
+        });
+        hero.scale.setScalar(selected ? 1.03 : hovered ? 1.015 : 1);
+        entry.heroEdges.material.opacity = selected ? 0.95 : hovered ? 0.55 : 0.20;
+      });
+
+      sceneObjects.techs.forEach((entry, key) => {
+        const selected = state.selection && state.selection.type === 'tech' && key === `${state.selection.sectorId}::${state.selection.techName}`;
+        const hovered = hoveredRef && hoveredRef.type === 'tech' && key === `${hoveredRef.sectorId}::${hoveredRef.techName}`;
+        const mats = Array.isArray(entry.mesh.material) ? entry.mesh.material : [entry.mesh.material];
+        mats.forEach((mat, idx) => {
+          if (!mat) return;
+          mat.emissive = mat.emissive || new THREE.Color(0x000000);
+          if (selected) {
+            mat.emissive.set(0xffffff);
+            mat.emissiveIntensity = idx === 2 ? 0.30 : 0.24;
+          } else if (hovered) {
+            mat.emissive.set(entry.sector.color);
+            mat.emissiveIntensity = 0.18;
+          } else {
+            mat.emissiveIntensity = idx === 2 ? (document.body.classList.contains('light-mode') ? 0.03 : 0.07) : (document.body.classList.contains('light-mode') ? 0.08 : 0.15);
+          }
+        });
+        entry.mesh.scale.set(selected ? 1.06 : hovered ? 1.03 : 1, selected ? 1.06 : hovered ? 1.03 : 1, selected ? 1.06 : hovered ? 1.03 : 1);
+        entry.edge.material.opacity = selected ? 0.92 : hovered ? 0.52 : (document.body.classList.contains('light-mode') ? 0.28 : 0.18);
+      });
+    }
+
+    function buildTooltip(meta){
+      const sector = getSector(meta.sectorId);
+      if (!sector) return null;
+      if (meta.type === 'tech'){
+        const tech = getTech(sector, meta.techName);
+        if (!tech) return null;
+        return {
+          title: tech.name,
+          sub: `${escapeHtml(sector.name)}<br>기술수준 ${formatPercent(tech.techLevelPct)} · 2026 ${formatBudgetMixed(tech.budgetMillion2026)}`
+        };
+      }
+      return {
+        title: sector.name,
+        sub: `분야 기술수준 ${formatPercent(sector.techLevelPct)} · 2026 ${formatBudgetTrillion(sector.budgetTrillion2026)}`
+      };
+    }
+
+    function updateTooltipPosition(){
+      if (!tooltip.classList.contains('visible')) return;
+      const offsetX = 18;
+      const offsetY = 18;
+      const maxLeft = window.innerWidth - tooltip.offsetWidth - 12;
+      const maxTop = window.innerHeight - tooltip.offsetHeight - 12;
+      const left = clamp(pointerClient.x + offsetX, 12, maxLeft);
+      const top = clamp(pointerClient.y + offsetY, 12, maxTop);
+      tooltip.style.left = `${left}px`;
+      tooltip.style.top = `${top}px`;
+    }
+
+    function selectSector(sectorId){
+      const sector = getSector(sectorId);
+      if (!sector) return;
+      state.selection = { type: 'sector', sectorId: Number(sectorId), techName: null };
+      renderPanel();
+      openPanel();
+    }
+
+    function selectTech(sectorId, techName){
+      const sector = getSector(sectorId);
+      if (!sector) return;
+      state.selection = { type: 'tech', sectorId: Number(sectorId), techName: String(techName) };
+      renderPanel();
+      openPanel();
+    }
+
+    function getSector(sectorId){
+      return DATA.sectors.find(sector => Number(sector.id) === Number(sectorId));
+    }
+
+    function getTech(sector, techName){
+      return sector?.detailTechs?.find(tech => tech.name === techName) || null;
+    }
+
+    function openPanel(){
+      document.body.classList.add('panel-open');
+    }
+
+    function closePanel(){
+      document.body.classList.remove('panel-open');
+      state.selection = null;
+    }
+
+    function renderInitialPanel(){
+      panelBody.innerHTML = `
+        <section class="section">
+          <div class="section-title">국가전략기술 현황</div>
+          <div class="empty">3D 맵에서 전략기술 분야 또는 세부 중점기술 타워를 클릭하면 기술수준, 예산, 부처별 예산, 관련사업이 표시됩니다.</div>
+        </section>
+      `;
+    }
+
+    function renderPanel(){
+      if (!state.selection) return;
+      const sector = getSector(state.selection.sectorId);
+      const tech = state.selection.type === 'tech' ? getTech(sector, state.selection.techName) : null;
+      if (!sector) return;
+
+      panelKicker.textContent = tech ? '세부 중점기술' : '전략기술 분야';
+      panelTitle.textContent = tech ? tech.name : sector.name;
+      panelSubtitle.textContent = tech ? `${sector.name}` : `세부 중점기술 ${sector.detailTechs.length}개`;
+
+      const techHasMappedProjects = !!(tech && tech.projects && tech.projects.length);
+      const diff26 = tech ? tech.budgetDiffMillion : sector.budgetDiffTrillion;
+      const mainBudget26 = tech
+        ? (techHasMappedProjects ? formatBudgetMixed(tech.budgetMillion2026) : (sector.hasFocusTechMapping ? '0억원' : '분야 단위 사업'))
+        : formatBudgetTrillion(sector.budgetTrillion2026);
+      const compareBudget25 = tech
+        ? (techHasMappedProjects ? formatBudgetMixed(tech.budgetMillion2025) : (sector.hasFocusTechMapping ? '0억원' : '분야 단위 사업'))
+        : formatBudgetTrillion(sector.budgetTrillion2025);
+      const diffText = tech
+        ? (techHasMappedProjects ? formatBudgetSigned(diff26, 'million') : (sector.hasFocusTechMapping ? '±0억원' : '분야 단위 사업'))
+        : formatBudgetSigned(diff26, 'trillion');
+
+      const techRows = [...sector.detailTechs].sort((a, b) => b.techLevelPct - a.techLevelPct || (b.budgetMillion2026 || 0) - (a.budgetMillion2026 || 0))
+        .map(detail => renderTechRow(sector, detail, tech && tech.name === detail.name)).join('');
+
+      const techSource = tech && tech.projects.length ? tech : null;
+      const ministrySource = techSource ? techSource.ministries : sector.ministries;
+      const ministryNote = tech
+        ? (tech.projects.length ? '' : (tech.mappingNote || sector.mappingNote || '연결된 세부사업이 없습니다.'))
+        : sector.mappingNote;
+
+      const ministryRows = ministrySource.length
+        ? renderMinistries(ministrySource)
+        : `<div class="empty">부처별 예산 정보가 없습니다.</div>`;
+
+      const projectSource = tech && tech.projects.length ? tech.projects : (tech && !tech.projects.length ? sector.projects : sector.projects);
+      const projectRows = projectSource.length
+        ? projectSource.slice(0, 32).map(renderProjectCard).join('')
+        : `<div class="empty">관련사업이 없습니다.</div>`;
+      const moreProjects = projectSource.length > 32 ? `<div class="empty">외 ${projectSource.length - 32}개 사업이 더 있습니다.</div>` : '';
+
+      panelBody.innerHTML = `
+        <section class="section">
+          <div class="hero-grid">
+            ${heroCard(tech ? '기술수준' : '분야 기술수준', tech ? formatPercent(tech.techLevelPct) : formatPercent(sector.techLevelPct), tech ? '세부 중점기술' : `${sector.detailTechs.length}개 세부 중점기술`)}
+            ${heroCard('2026 예산', mainBudget26, tech ? (techHasMappedProjects ? `${tech.projectCount}개 연결사업` : (sector.hasFocusTechMapping ? '연결사업 없음' : '분야 단위 사업')) : `${sector.projectsCount}개 사업`)}
+            ${heroCard('2025 비교', compareBudget25, `증감 ${diffText}`)}
+          </div>
+        </section>
+
+        <section class="section">
+          <div class="section-title">
+            <span>세부 중점기술 · 기술수준</span>
+            <span class="section-sub">${sector.name}</span>
+          </div>
+          <div class="tech-list">${techRows}</div>
+        </section>
+
+        <section class="section">
+          <div class="section-title">
+            <span>부처별 예산</span>
+            <span class="section-sub">2026 기준</span>
+          </div>
+          ${ministryNote ? `<div class="note">${escapeHtml(ministryNote)}</div>` : ''}
+          <div class="dept-list">${ministryRows}</div>
+        </section>
+
+        <section class="section">
+          <div class="section-title">
+            <span>관련사업 목록</span>
+            <span class="section-sub">${tech && tech.projects.length ? `${tech.projects.length}개` : `${sector.projectsCount}개`}</span>
+          </div>
+          ${tech && !tech.projects.length ? `<div class="note">선택한 세부 중점기술과 직접 연결된 사업이 없어, 분야 전체 사업을 표시합니다.</div>` : ''}
+          <div class="project-list">${projectRows}</div>
+          ${moreProjects}
+        </section>
+      `;
+
+      panelBody.querySelectorAll('[data-tech-button]').forEach(button => {
+        button.addEventListener('click', () => selectTech(Number(button.dataset.sectorId), button.dataset.techName));
+      });
+    }
+
+    function renderTechRow(sector, tech, active){
+      const mappedBudget26 = tech.budgetMillion2026 > 0 ? formatBudgetMixed(tech.budgetMillion2026) : (sector.hasFocusTechMapping ? '0억원' : '분야 단위 사업');
+      const mappedBudget25 = tech.budgetMillion2025 > 0 ? formatBudgetMixed(tech.budgetMillion2025) : (sector.hasFocusTechMapping ? '0억원' : '분야 단위 사업');
+      return `
+        <button class="tech-row ${active ? 'active' : ''}" type="button"
+          data-tech-button="1"
+          data-sector-id="${sector.id}"
+          data-tech-name="${escapeAttr(tech.name)}">
+          <div class="tech-row-top">
+            <div class="tech-row-name">${escapeHtml(tech.name)}</div>
+            <div class="tech-row-level"><span>기술수준</span>${formatPercent(tech.techLevelPct)}</div>
+          </div>
+          <div class="level-track"><div class="level-fill" style="width:${Math.max(4, tech.techLevelPct)}%"></div></div>
+          <div class="tech-row-meta">
+            <span>2026 ${mappedBudget26}</span>
+            <span>2025 ${mappedBudget25}</span>
+          </div>
+        </button>
+      `;
+    }
+
+    function renderMinistries(items){
+      const maxBudget = Math.max(1, ...items.map(item => item.budgetMillion2026 || 0));
+      return items.map(item => `
+        <div class="dept-item">
+          <div class="dept-top">
+            <div class="dept-name">${escapeHtml(item.name)}</div>
+            <div class="mono">${formatBudgetMixed(item.budgetMillion2026)}</div>
+          </div>
+          <div class="bar-track"><div class="bar-fill" style="width:${Math.max(6, ((item.budgetMillion2026 || 0) / maxBudget) * 100)}%"></div></div>
+          <div class="bar-meta">
+            <span>2026 ${formatBudgetMixed(item.budgetMillion2026)}</span>
+            <span>2025 ${formatBudgetMixed(item.budgetMillion2025)}</span>
+            <span>${item.projectCount}개 사업</span>
+          </div>
+        </div>
+      `).join('');
+    }
+
+    function renderProjectCard(project){
+      return `
+        <article class="project-card">
+          <div class="project-head">
+            <div class="project-program">${escapeHtml(project.program || project.subproject || '사업명 없음')}</div>
+            <div class="project-ministry">${escapeHtml(project.ministry || '부처 미상')}</div>
+          </div>
+          <div class="project-sub">${escapeHtml(project.subproject || project.program || '')}</div>
+          <div class="project-meta">
+            <div class="project-pill">
+              <div class="k">2026 예산</div>
+              <div class="v">${formatBudgetMixed(project.budgetMillion2026)}</div>
+            </div>
+            <div class="project-pill">
+              <div class="k">2025 비교</div>
+              <div class="v">${formatBudgetMixed(project.budgetMillion2025)}</div>
+            </div>
+            <div class="project-pill">
+              <div class="k">기간</div>
+              <div class="v">${escapeHtml(formatPeriod(project.start, project.end))}</div>
+            </div>
+          </div>
+        </article>
+      `;
+    }
+
+    function heroCard(label, value, meta){
+      return `
+        <div class="hero-card">
+          <div class="h-label">${escapeHtml(label)}</div>
+          <div class="h-value">${escapeHtml(String(value))}</div>
+          <div class="h-meta">${escapeHtml(meta)}</div>
+        </div>
+      `;
+    }
+
+    function populateSearch(){
+      const items = [];
+      DATA.sectors.forEach(sector => {
+        items.push({ type: 'sector', label: sector.name, sectorId: sector.id });
+        sector.detailTechs.forEach(tech => items.push({ type: 'tech', label: tech.name, sectorId: sector.id, techName: tech.name }));
+      });
+      searchList.innerHTML = items.map(item => `<option value="${escapeAttr(item.label)}"></option>`).join('');
+    }
+
+    function performSearch(query){
+      const q = String(query || '').trim();
+      if (!q) return;
+      const exactSector = DATA.sectors.find(sector => sector.name === q);
+      if (exactSector) {
+        selectSector(exactSector.id);
+        return;
+      }
+      for (const sector of DATA.sectors){
+        const exactTech = sector.detailTechs.find(tech => tech.name === q);
+        if (exactTech) {
+          selectTech(sector.id, exactTech.name);
+          return;
+        }
+      }
+      const normalizedQ = q.toLowerCase();
+      const partialSector = DATA.sectors.find(sector => sector.name.toLowerCase().includes(normalizedQ));
+      if (partialSector) {
+        selectSector(partialSector.id);
+        return;
+      }
+      for (const sector of DATA.sectors){
+        const partialTech = sector.detailTechs.find(tech => tech.name.toLowerCase().includes(normalizedQ));
+        if (partialTech) {
+          selectTech(sector.id, partialTech.name);
+          return;
+        }
+      }
+    }
+
+    function resetView(){
+      camera.position.set(0, 54, 102);
+      controls.target.set(0, 8, 2);
+      controls.update();
+    }
+
+    function applyTheme(mode, persist = true){
+      state.theme = mode;
+      document.body.classList.toggle('light-mode', mode === 'light');
+      themeBtn.textContent = mode === 'light' ? '🌙 다크' : '☀️ 라이트';
+      if (persist) localStorage.setItem(STORAGE_KEY, mode);
+      if (!state.started) return;
+      renderer.toneMappingExposure = document.body.classList.contains('light-mode') ? 1.08 : 1.14;
+      scene.fog.color = new THREE.Color(getThemePalette().fog);
+      scene.fog.density = 0.010;
+      refreshSceneTheme();
+      renderPanel();
+    }
+
+    function refreshSceneTheme(){
+      const palette = getThemePalette();
+      sceneObjects.ambient.color.set(palette.ambientColor);
+      sceneObjects.ambient.intensity = palette.ambientIntensity;
+      sceneObjects.hemi.color.set(palette.skyColor);
+      sceneObjects.hemi.groundColor.set(palette.groundColor);
+      sceneObjects.hemi.intensity = palette.hemiIntensity;
+      sceneObjects.sun.color.set(palette.sunColor);
+      sceneObjects.sun.intensity = palette.sunIntensity;
+      sceneObjects.fill.color.set(palette.fillColor);
+      sceneObjects.fill.intensity = palette.fillIntensity;
+
+      if (sceneObjects.floor){
+        sceneObjects.floor.material.color.set(palette.floor);
+        sceneObjects.floor.material.specular.set(palette.floorSpec);
+        sceneObjects.floor.material.opacity = document.body.classList.contains('light-mode') ? 0.78 : 0.90;
+      }
+      if (sceneObjects.floorGrid){
+        sceneObjects.floorGrid.material.color.set(palette.grid);
+        sceneObjects.floorGrid.material.opacity = document.body.classList.contains('light-mode') ? 0.13 : 0.18;
+      }
+      sceneObjects.skyline.forEach(mesh => {
+        mesh.material.color.set(palette.skyline);
+        mesh.material.opacity = document.body.classList.contains('light-mode') ? 0.34 : 0.26;
+      });
+
+      sceneObjects.foundations.forEach(entry => {
+        const baseColor = new THREE.Color(entry.sector.color);
+        entry.foundation.material.color.copy(baseColor.clone().multiplyScalar(document.body.classList.contains('light-mode') ? 0.88 : 0.54));
+        entry.foundation.material.specular.set(document.body.classList.contains('light-mode') ? 0xbfd8ef : 0x203348);
+        entry.top.material.color.copy(baseColor.clone().lerp(new THREE.Color(0xffffff), document.body.classList.contains('light-mode') ? 0.26 : 0.18));
+        entry.ring.material.opacity = document.body.classList.contains('light-mode') ? 0.24 : 0.18;
+
+        const heroMaterials = Array.isArray(entry.hero.material) ? entry.hero.material : [entry.hero.material];
+        applyTowerMaterialTheme(heroMaterials, baseColor, 1.06);
+        entry.heroEdges.material.opacity = document.body.classList.contains('light-mode') ? 0.28 : 0.20;
+      });
+      sceneObjects.techs.forEach(entry => {
+        applyTowerMaterialTheme(Array.isArray(entry.mesh.material) ? entry.mesh.material : [entry.mesh.material], new THREE.Color(entry.sector.color), 0.98);
+        entry.edge.material.opacity = document.body.classList.contains('light-mode') ? 0.28 : 0.18;
+      });
+    }
+
+    function applyTowerMaterialTheme(materials, baseColor, intensity){
+      const sideColor = baseColor.clone().lerp(new THREE.Color(0xffffff), document.body.classList.contains('light-mode') ? 0.18 : 0.10);
+      const topColor = baseColor.clone().lerp(new THREE.Color(0xffffff), document.body.classList.contains('light-mode') ? 0.42 : 0.26);
+      const sideTexture = createWindowTexture(sideColor, intensity);
+      materials.forEach((mat, idx) => {
+        if (!mat) return;
+        if (idx === 2){
+          mat.color.copy(topColor);
+          mat.emissive.copy(baseColor.clone().lerp(new THREE.Color(0xffffff), 0.14));
+          mat.emissiveIntensity = document.body.classList.contains('light-mode') ? 0.03 : 0.07;
+          mat.roughness = 0.22;
+          mat.metalness = 0.18;
+        } else if (idx === 3){
+          mat.color.copy(sideColor.clone().multiplyScalar(0.82));
+          mat.roughness = 0.66;
+          mat.metalness = 0.04;
+        } else {
+          mat.color.copy(sideColor);
+          mat.map = sideTexture;
+          mat.emissive.copy(sideColor.clone().lerp(new THREE.Color(0xffffff), 0.45));
+          mat.emissiveMap = sideTexture;
+          mat.emissiveIntensity = document.body.classList.contains('light-mode') ? 0.08 : 0.15;
+          mat.roughness = document.body.classList.contains('light-mode') ? 0.52 : 0.38;
+          mat.metalness = document.body.classList.contains('light-mode') ? 0.06 : 0.16;
+        }
+        mat.needsUpdate = true;
+      });
+    }
+
+    function getPreferredTheme(){
+      const stored = localStorage.getItem(STORAGE_KEY);
+      if (stored === 'light' || stored === 'dark') return stored;
+      return (window.matchMedia && window.matchMedia('(prefers-color-scheme: light)').matches) ? 'light' : 'dark';
+    }
+
+    function getThemePalette(){
+      const isLight = document.body.classList.contains('light-mode');
+      return isLight ? {
+        fog: 0xdde9f6,
+        floor: 0xe8f1f9,
+        floorSpec: 0xffffff,
+        grid: 0x7aa6cf,
+        ring: 0x5d9cd5,
+        skyline: 0xb7cadf,
+        ambientColor: 0xffffff,
+        ambientIntensity: 1.15,
+        skyColor: 0xffffff,
+        groundColor: 0xb1c8de,
+        hemiIntensity: 1.05,
+        sunColor: 0xffffff,
+        sunIntensity: 1.58,
+        fillColor: 0xb9d6ef,
+        fillIntensity: 0.95,
+      } : {
+        fog: 0x0a1220,
+        floor: 0x0f2033,
+        floorSpec: 0x1b4468,
+        grid: 0x2a4965,
+        ring: 0x7fd9ff,
+        skyline: 0x4b6a88,
+        ambientColor: 0xd4e7f8,
+        ambientIntensity: 0.68,
+        skyColor: 0x8ccfff,
+        groundColor: 0x0a1525,
+        hemiIntensity: 1.18,
+        sunColor: 0xe6f5ff,
+        sunIntensity: 1.72,
+        fillColor: 0x6bc7ff,
+        fillIntensity: 0.44,
+      };
+    }
+
+    function formatBudgetTrillion(value){
+      return `${Number(value).toFixed(2)}조원`;
+    }
+
+    function formatBudgetMixed(value){
+      const num = Number(value || 0);
+      return `${formatNumber(num / 100, 1)}억원`;
+    }
+
+    function formatBudgetSigned(value, unitType){
+      const num = Number(value || 0);
+      const sign = num > 0 ? '+' : num < 0 ? '-' : '±';
+      if (unitType === 'trillion') {
+        return `${sign}${Math.abs(num).toFixed(2)}조원`;
+      }
+      return `${sign}${formatNumber(Math.abs(num) / 100, 1)}억원`;
+    }
+
+    function formatPercent(value){
+      return `${Number(value || 0).toFixed(1)}%`;
+    }
+
+    function formatNumber(value, decimals = 1){
+      return Number(value || 0).toLocaleString('ko-KR', { minimumFractionDigits: decimals, maximumFractionDigits: decimals });
+    }
+
+    function formatPeriod(start, end){
+      const a = start == null ? '-' : String(start);
+      const b = end == null ? '-' : String(end);
+      return `${a} ~ ${b}`;
+    }
+
+    function showError(message){
+      errorText.textContent = message;
+      errorBox.classList.add('visible');
+      loading.classList.add('hidden');
+    }
+
+    function colorToRgb(color){
+      const c = color instanceof THREE.Color ? color : new THREE.Color(color);
+      return { r: c.r, g: c.g, b: c.b };
+    }
+
+    function paletteLineColor(color, mix){
+      return color.clone().lerp(new THREE.Color(0xffffff), mix);
+    }
+
+    function spiralPoint(index, total, radius, seed){
+      const golden = Math.PI * (3 - Math.sqrt(5));
+      const t = total <= 1 ? 0 : (index + 0.5) / total;
+      const r = Math.sqrt(t) * radius * (0.76 + seeded(seed + index * 11) * 0.18);
+      const angle = index * golden + seed * 0.7;
+      return { x: Math.cos(angle) * r, z: Math.sin(angle) * r };
+    }
+
+    function seeded(num){
+      const x = Math.sin(num * 12.9898) * 43758.5453;
+      return x - Math.floor(x);
     }
 
     function clamp(v, min, max){
-      return Math.max(min, Math.min(max, v));
+      return Math.min(max, Math.max(min, v));
     }
 
-    function escapeHtml(str){
-      return String(str ?? '')
+    function escapeHtml(value){
+      return String(value ?? '')
         .replace(/&/g, '&amp;')
         .replace(/</g, '&lt;')
         .replace(/>/g, '&gt;')
@@ -878,990 +1511,9 @@
         .replace(/'/g, '&#39;');
     }
 
-    function formatInt(v){
-      return num(v).toLocaleString('ko-KR');
+    function escapeAttr(value){
+      return escapeHtml(value).replace(/"/g, '&quot;');
     }
-
-    function formatPct(v){
-      return `${num(v).toFixed(1)}%`;
-    }
-
-    function formatSignedPct(v){
-      const n = num(v);
-      return `${n > 0 ? '+' : ''}${n.toFixed(1)}%`;
-    }
-
-    function formatTrillion(v){
-      return `${num(v).toFixed(2)}조원`;
-    }
-
-    function formatBudgetFromMillion(v){
-      const n = num(v);
-      if (n >= 1000000) return `${(n / 1000000).toFixed(2)}조원`;
-      if (n >= 10000) return `${(n / 100).toLocaleString('ko-KR', { maximumFractionDigits: 0 })}억원`;
-      if (n >= 100) return `${(n / 100).toLocaleString('ko-KR', { maximumFractionDigits: 1 })}억원`;
-      return `${n.toLocaleString('ko-KR', { maximumFractionDigits: 1 })}백만원`;
-    }
-
-    function normalizeText(text){
-      return String(text || '').toLowerCase().replace(/\s+/g, '');
-    }
-
-    function hexToRgb(hex){
-      const value = String(hex || '#000000').replace('#', '');
-      const normal = value.length === 3 ? value.split('').map(c => c + c).join('') : value;
-      const bigint = parseInt(normal, 16);
-      return {
-        r: (bigint >> 16) & 255,
-        g: (bigint >> 8) & 255,
-        b: bigint & 255
-      };
-    }
-
-    function rgbToHex({ r, g, b }){
-      const toHex = (v) => clamp(Math.round(v), 0, 255).toString(16).padStart(2, '0');
-      return `#${toHex(r)}${toHex(g)}${toHex(b)}`;
-    }
-
-    function shade(hex, ratio){
-      const rgb = hexToRgb(hex);
-      if (ratio >= 0){
-        return rgbToHex({
-          r: rgb.r + (255 - rgb.r) * ratio,
-          g: rgb.g + (255 - rgb.g) * ratio,
-          b: rgb.b + (255 - rgb.b) * ratio
-        });
-      }
-      const p = Math.abs(ratio);
-      return rgbToHex({
-        r: rgb.r * (1 - p),
-        g: rgb.g * (1 - p),
-        b: rgb.b * (1 - p)
-      });
-    }
-
-    function normalizeData(raw){
-      const meta = {
-        totalBudgetTrillion2026: num(raw?.meta?.totalBudgetTrillion2026),
-        totalBudgetTrillion2025: num(raw?.meta?.totalBudgetTrillion2025),
-        sectorCount: num(raw?.meta?.sectorCount) || raw?.sectors?.length || 0,
-        detailTechCount: num(raw?.meta?.detailTechCount),
-        totalProjects: num(raw?.meta?.totalProjects),
-        averageTechLevelPct: num(raw?.meta?.averageTechLevelPct),
-        sourceFile: raw?.meta?.sourceFile || ''
-      };
-
-      const sectors = (raw?.sectors || []).map((sector) => {
-        const budgetTrillion2026 = num(sector.budgetTrillion2026);
-        const budgetTrillion2025 = num(sector.budgetTrillion2025);
-        const techLevelPct = num(sector.techLevelPct);
-        const detailTechs = (sector.detailTechs || []).map((tech) => ({
-          name: tech.name || '세부기술 미상',
-          techLevelPct: num(tech.techLevelPct),
-          budgetMillion2025: num(tech.budgetMillion2025),
-          budgetMillion2026: num(tech.budgetMillion2026),
-          projectCount: num(tech.projectCount),
-          projects: tech.projects || [],
-          departmentBudgets: tech.departmentBudgets || []
-        }));
-
-        const projects = (sector.projects || []).map((project) => ({
-          ministry: project.ministry || '',
-          program: project.program || '',
-          subproject: project.subproject || '',
-          start: project.start ?? '',
-          end: project.end ?? '',
-          focusTech: project.mappedDetailTech || project.focusTechRaw || '',
-          budgetMillion2025: num(project.budgetMillion2025),
-          budgetMillion2026: num(project.budgetMillion2026)
-        }));
-
-        const topMinistries = (sector.departmentBudgetsTop || sector.departmentBudgets || []).map((item) => ({
-          name: item.name || '',
-          budgetMillion2025: num(item.budgetMillion2025),
-          budgetMillion2026: num(item.budgetMillion2026)
-        }));
-
-        const growthPct = budgetTrillion2025 > 0 ? ((budgetTrillion2026 - budgetTrillion2025) / budgetTrillion2025) * 100 : 0;
-
-        return {
-          id: num(sector.id),
-          name: sector.name || '',
-          shortCode: SHORT_CODES[sector.name] || sector.name,
-          labelLines: LABEL_LINES[sector.name] || [sector.name],
-          color: sector.color || '#9DC7F7',
-          techLevelPct,
-          budgetTrillion2026,
-          budgetTrillion2025,
-          budgetMillion2026: budgetTrillion2026 * 1000000,
-          budgetMillion2025: budgetTrillion2025 * 1000000,
-          growthPct,
-          detailTechCount: detailTechs.length,
-          detailTechs,
-          projects,
-          projectsCount: num(sector.projectsCount) || projects.length,
-          topMinistries
-        };
-      });
-
-      sectors.forEach((sector) => {
-        sector.budgetSharePct = meta.totalBudgetTrillion2026 > 0 ? (sector.budgetTrillion2026 / meta.totalBudgetTrillion2026) * 100 : 0;
-      });
-
-      return { meta, sectors };
-    }
-
-    const DATA = normalizeData(RAW || {});
-    if (!DATA.sectors.length){
-      showError('data.js를 읽지 못했습니다.', '같은 폴더의 data.js가 정상적으로 배포되었는지 확인하세요.');
-      throw new Error('STRATEGIC_MAP_DATA missing');
-    }
-
-    const techLevels = DATA.sectors.map((sector) => sector.techLevelPct);
-    const techMin = Math.min(...techLevels);
-    const techMax = Math.max(...techLevels);
-    const techRange = Math.max(techMax - techMin, 1);
-
-    function getBlockHeight(level){
-      const normalized = clamp((num(level) - techMin) / techRange, 0, 1);
-      return 16 + Math.pow(normalized, 0.92) * 96;
-    }
-
-    function showError(title, detail = ''){
-      errorBanner.classList.add('show');
-      errorBanner.innerHTML = `<strong>${escapeHtml(title)}</strong>${detail ? escapeHtml(detail) : ''}`;
-    }
-
-    function mountTopStats(){
-      document.getElementById('kpi2026').textContent = DATA.meta.totalBudgetTrillion2026.toFixed(2);
-      document.getElementById('kpi2025').textContent = DATA.meta.totalBudgetTrillion2025.toFixed(2);
-      document.getElementById('kpiSectors').textContent = formatInt(DATA.meta.sectorCount || DATA.sectors.length);
-      document.getElementById('kpiTechs').textContent = formatInt(DATA.meta.detailTechCount);
-      document.getElementById('kpiProjects').textContent = formatInt(DATA.meta.totalProjects);
-    }
-
-    function renderSectorStrip(){
-      sectorStrip.innerHTML = DATA.sectors
-        .slice()
-        .sort((a, b) => b.budgetMillion2026 - a.budgetMillion2026)
-        .map((sector) => `
-          <button
-            class="sector-chip ${state.selectedSectorId === sector.id ? 'active' : ''}"
-            type="button"
-            data-sector-chip="${sector.id}"
-            style="border-color:${state.selectedSectorId === sector.id ? sector.color : ''};"
-          >
-            ${escapeHtml(sector.name)}
-            <span class="budget">${formatTrillion(sector.budgetTrillion2026)}</span>
-          </button>
-        `).join('');
-
-      sectorStrip.querySelectorAll('[data-sector-chip]').forEach((button) => {
-        button.addEventListener('click', () => {
-          selectSector(num(button.getAttribute('data-sector-chip')));
-        });
-      });
-    }
-
-    function getSectorById(id){
-      return DATA.sectors.find((sector) => sector.id === id) || null;
-    }
-
-    function renderStatusCard(){
-      const sector = getSectorById(state.hoverSectorId) || getSectorById(state.selectedSectorId);
-      if (!sector){
-        statusCard.classList.remove('show');
-        statusCard.innerHTML = '';
-        return;
-      }
-      statusCard.classList.add('show');
-      statusCard.innerHTML = `
-        <div class="name">${escapeHtml(sector.name)}</div>
-        <div class="meta">
-          <span>2026 예산 ${formatTrillion(sector.budgetTrillion2026)}</span>
-          <span>기술수준 ${formatPct(sector.techLevelPct)}</span>
-          <span>세부기술 ${formatInt(sector.detailTechCount)}개</span>
-        </div>
-      `;
-    }
-
-    function renderMetricCard(label, value, sub=''){
-      return `
-        <div class="metric-card">
-          <span class="k">${escapeHtml(label)}</span>
-          <div class="v">${value}</div>
-          ${sub ? `<div class="sub">${escapeHtml(sub)}</div>` : ''}
-        </div>
-      `;
-    }
-
-    function renderCompareRows(sector){
-      const maxBudget = Math.max(sector.budgetMillion2025, sector.budgetMillion2026, 1);
-      return `
-        <div class="compare-row">
-          <div>2025년</div>
-          <div class="compare-track">
-            <div class="compare-fill" style="width:${(sector.budgetMillion2025 / maxBudget) * 100}%; background:linear-gradient(90deg, rgba(255,255,255,.32), ${shade(sector.color, 0.08)});"></div>
-          </div>
-          <div class="compare-value">${formatTrillion(sector.budgetTrillion2025)}</div>
-        </div>
-        <div class="compare-row">
-          <div>2026년</div>
-          <div class="compare-track">
-            <div class="compare-fill" style="width:${(sector.budgetMillion2026 / maxBudget) * 100}%; background:linear-gradient(90deg, ${shade(sector.color, -0.05)}, ${shade(sector.color, 0.18)});"></div>
-          </div>
-          <div class="compare-value">${formatTrillion(sector.budgetTrillion2026)}</div>
-        </div>
-      `;
-    }
-
-    function renderTechSection(sector){
-      const techs = sector.detailTechs
-        .slice()
-        .sort((a, b) => (b.techLevelPct - a.techLevelPct) || (b.budgetMillion2026 - a.budgetMillion2026));
-
-      if (!techs.length){
-        return `<div class="empty">세부 중점기술 데이터가 없습니다.</div>`;
-      }
-
-      return `
-        <div class="filter-row">
-          <button type="button" class="filter-chip ${state.focusFilter === 'ALL' ? 'active' : ''}" data-focus-filter="ALL">전체</button>
-          ${techs.map((tech) => `
-            <button
-              type="button"
-              class="filter-chip ${state.focusFilter === tech.name ? 'active' : ''}"
-              data-focus-filter="${escapeHtml(tech.name)}"
-            >${escapeHtml(tech.name)}</button>
-          `).join('')}
-        </div>
-        <div class="tech-list">
-          ${techs.map((tech) => `
-            <button
-              type="button"
-              class="tech-card ${state.focusFilter === tech.name ? 'active' : ''}"
-              data-focus-filter="${escapeHtml(tech.name)}"
-            >
-              <div class="tech-head">
-                <div class="tech-name">${escapeHtml(tech.name)}</div>
-                <div class="tech-level">기술수준 ${formatPct(tech.techLevelPct)}</div>
-              </div>
-              <div class="tech-bar">
-                <div class="tech-fill" style="width:${clamp(tech.techLevelPct, 0, 100)}%; background:linear-gradient(90deg, ${shade(sector.color, -0.10)}, ${shade(sector.color, 0.18)});"></div>
-              </div>
-              <div class="tech-meta">
-                <span class="mini-pill">2026 예산 ${formatBudgetFromMillion(tech.budgetMillion2026)}</span>
-                <span class="mini-pill">2025 예산 ${formatBudgetFromMillion(tech.budgetMillion2025)}</span>
-                <span class="mini-pill">사업 ${formatInt(tech.projectCount)}개</span>
-              </div>
-            </button>
-          `).join('')}
-        </div>
-      `;
-    }
-
-    function renderMinistrySection(sector){
-      const items = sector.topMinistries
-        .slice()
-        .sort((a, b) => b.budgetMillion2026 - a.budgetMillion2026)
-        .filter((item) => item.budgetMillion2026 > 0 || item.budgetMillion2025 > 0);
-
-      if (!items.length){
-        return `<div class="empty">부처별 예산 데이터가 없습니다.</div>`;
-      }
-
-      const maxBudget = Math.max(...items.map((item) => item.budgetMillion2026), 1);
-
-      return `
-        <div class="mini-bars">
-          ${items.map((item) => `
-            <div class="mini-bar-row">
-              <div class="mini-bar-label">${escapeHtml(item.name)}</div>
-              <div class="mini-bar-track">
-                <div class="mini-bar-fill" style="width:${(item.budgetMillion2026 / maxBudget) * 100}%; background:linear-gradient(90deg, ${shade(sector.color, -0.10)}, ${shade(sector.color, 0.18)});"></div>
-              </div>
-              <div class="mini-bar-value">${formatBudgetFromMillion(item.budgetMillion2026)}</div>
-            </div>
-          `).join('')}
-        </div>
-      `;
-    }
-
-    function filterProjects(sector){
-      const q = normalizeText(state.projectQuery);
-      return sector.projects
-        .filter((project) => {
-          const techOk = state.focusFilter === 'ALL' || project.focusTech === state.focusFilter;
-          if (!techOk) return false;
-          if (!q) return true;
-          const blob = normalizeText([
-            project.program,
-            project.subproject,
-            project.ministry,
-            project.focusTech
-          ].join(' '));
-          return blob.includes(q);
-        })
-        .sort((a, b) => b.budgetMillion2026 - a.budgetMillion2026);
-    }
-
-    function renderProjectSection(sector){
-      const projects = filterProjects(sector);
-      const visible = projects.slice(0, state.projectLimit);
-
-      return `
-        <div class="project-toolbar">
-          <input id="projectSearchInput" class="search-input" type="text" value="${escapeHtml(state.projectQuery)}" placeholder="사업명 / 부처 / 세부기술 검색" />
-          <div class="search-count">${formatInt(projects.length)}건</div>
-        </div>
-
-        <div class="project-list">
-          ${visible.length ? visible.map((project) => `
-            <div class="project-card">
-              <div class="project-top">
-                <div class="project-name">${escapeHtml(project.program || project.subproject || '사업명 없음')}</div>
-                <div class="project-budget">${formatBudgetFromMillion(project.budgetMillion2026)}</div>
-              </div>
-              <div class="project-sub">
-                ${[
-                  project.ministry || null,
-                  project.subproject || null,
-                  (project.start || project.end) ? `${project.start || '—'}~${project.end || '계속'}` : null,
-                  project.focusTech || null
-                ].filter(Boolean).map(escapeHtml).join(' · ')}
-              </div>
-              <div class="project-compare">
-                <span>2025 <strong>${escapeHtml(formatBudgetFromMillion(project.budgetMillion2025))}</strong></span>
-                <span>2026 <strong>${escapeHtml(formatBudgetFromMillion(project.budgetMillion2026))}</strong></span>
-              </div>
-            </div>
-          `).join('') : `<div class="empty">조건에 맞는 관련사업이 없습니다.</div>`}
-        </div>
-
-        ${projects.length > visible.length ? `
-          <div class="more-wrap">
-            <button id="moreProjectsBtn" class="more-btn" type="button">더 보기</button>
-          </div>
-        ` : ''}
-      `;
-    }
-
-    function renderDrawer(){
-      const sector = getSectorById(state.selectedSectorId);
-      if (!sector){
-        drawer.classList.remove('open');
-        drawer.setAttribute('aria-hidden', 'true');
-        drawer.innerHTML = '';
-        backdrop.classList.remove('show');
-        renderSectorStrip();
-        renderStatusCard();
-        return;
-      }
-
-      drawer.innerHTML = `
-        <div class="drawer-head">
-          <div class="drawer-color" style="background:${sector.color};"></div>
-          <div class="drawer-title-wrap">
-            <div class="drawer-eyebrow">${escapeHtml(sector.shortCode)}</div>
-            <h2 class="drawer-title">${escapeHtml(sector.name)}</h2>
-          </div>
-          <button id="drawerCloseBtn" class="icon-btn" type="button" aria-label="닫기">×</button>
-        </div>
-
-        <div class="drawer-body">
-          <div class="metric-grid">
-            ${renderMetricCard('2026 예산', formatTrillion(sector.budgetTrillion2026), `전체의 ${sector.budgetSharePct.toFixed(1)}%`)}
-            ${renderMetricCard('2025 예산', formatTrillion(sector.budgetTrillion2025), '비교값')}
-            ${renderMetricCard('증감률', formatSignedPct(sector.growthPct), '2025 대비')}
-            ${renderMetricCard('기술수준', formatPct(sector.techLevelPct), '분야 평균값')}
-          </div>
-
-          <section class="section">
-            <div class="section-head">
-              <div class="section-title">예산 비교</div>
-              <div class="section-sub">3D 맵은 2026 예산 기준</div>
-            </div>
-            ${renderCompareRows(sector)}
-          </section>
-
-          <section class="section">
-            <div class="section-head">
-              <div class="section-title">세부 중점기술 · 기술수준</div>
-              <div class="section-sub">${formatInt(sector.detailTechCount)}개</div>
-            </div>
-            ${renderTechSection(sector)}
-          </section>
-
-          <section class="section">
-            <div class="section-head">
-              <div class="section-title">부처별 2026 예산</div>
-              <div class="section-sub">${escapeHtml(DATA.meta.sourceFile || '')}</div>
-            </div>
-            ${renderMinistrySection(sector)}
-          </section>
-
-          <section class="section">
-            <div class="section-head">
-              <div class="section-title">관련사업</div>
-              <div class="section-sub">${state.focusFilter === 'ALL' ? '전체' : escapeHtml(state.focusFilter)}</div>
-            </div>
-            ${renderProjectSection(sector)}
-          </section>
-        </div>
-      `;
-
-      drawer.classList.add('open');
-      drawer.setAttribute('aria-hidden', 'false');
-      backdrop.classList.add('show');
-
-      const closeBtn = document.getElementById('drawerCloseBtn');
-      if (closeBtn) closeBtn.addEventListener('click', clearSelection);
-
-      drawer.querySelectorAll('[data-focus-filter]').forEach((button) => {
-        button.addEventListener('click', () => {
-          const filter = button.getAttribute('data-focus-filter') || 'ALL';
-          state.focusFilter = filter;
-          state.projectLimit = 18;
-          renderDrawer();
-        });
-      });
-
-      const searchInput = document.getElementById('projectSearchInput');
-      if (searchInput){
-        searchInput.addEventListener('input', (event) => {
-          state.projectQuery = event.target.value || '';
-          state.projectLimit = 18;
-          renderDrawer();
-          const nextInput = document.getElementById('projectSearchInput');
-          if (nextInput){
-            nextInput.focus();
-            nextInput.setSelectionRange(state.projectQuery.length, state.projectQuery.length);
-          }
-        });
-      }
-
-      const moreButton = document.getElementById('moreProjectsBtn');
-      if (moreButton){
-        moreButton.addEventListener('click', () => {
-          state.projectLimit += 18;
-          renderDrawer();
-        });
-      }
-
-      renderSectorStrip();
-      renderStatusCard();
-    }
-
-    function selectSector(id){
-      state.selectedSectorId = id;
-      state.focusFilter = 'ALL';
-      state.projectQuery = '';
-      state.projectLimit = 18;
-      renderDrawer();
-      update3DSelection();
-    }
-
-    function clearSelection(){
-      state.selectedSectorId = null;
-      state.focusFilter = 'ALL';
-      state.projectQuery = '';
-      state.projectLimit = 18;
-      renderDrawer();
-      update3DSelection();
-    }
-
-    backdrop.addEventListener('click', clearSelection);
-
-    document.addEventListener('keydown', (event) => {
-      if (event.key === 'Escape') clearSelection();
-    });
-
-    function applyTheme(mode, persist = true){
-      state.theme = mode === 'light' ? 'light' : 'dark';
-      document.body.classList.toggle('light-mode', state.theme === 'light');
-      themeToggle.textContent = state.theme === 'light' ? '🌙 다크' : '☀️ 라이트';
-      if (persist){
-        localStorage.setItem('strategic-map-theme', state.theme);
-      }
-      syncThreeTheme();
-    }
-
-    themeToggle.addEventListener('click', () => {
-      applyTheme(state.theme === 'light' ? 'dark' : 'light');
-    });
-
-    mountTopStats();
-    applyTheme(state.theme, false);
-    renderSectorStrip();
-    renderDrawer();
-
-    let THREE_NS = null;
-    let OrbitControlsClass = null;
-    let scene = null;
-    let camera = null;
-    let renderer = null;
-    let controls = null;
-    let ambientLight = null;
-    let hemiLight = null;
-    let keyLight = null;
-    let rimLight = null;
-    let floor = null;
-    let grid = null;
-    let mapGroup = null;
-    let blocks = [];
-    let selectionGroup = null;
-    let renderRequested = true;
-    let animationFrameId = null;
-    let lastPointerDown = null;
-    const raycaster = { current: null };
-    const pointer = { x: 0, y: 0 };
-
-    function splitBalanced(items){
-      const total = items.reduce((sum, item) => sum + item.value, 0);
-      if (items.length <= 1) return [items, []];
-      let bestIndex = 1;
-      let acc = 0;
-      let bestDiff = Infinity;
-      for (let i = 1; i < items.length; i += 1){
-        acc += items[i - 1].value;
-        const diff = Math.abs(total / 2 - acc);
-        if (diff < bestDiff){
-          bestDiff = diff;
-          bestIndex = i;
-        }
-      }
-      return [items.slice(0, bestIndex), items.slice(bestIndex)];
-    }
-
-    function binaryTreemap(items, x, z, w, d, out = []){
-      if (!items.length) return out;
-      if (items.length === 1){
-        out.push({ item: items[0], x, z, w, d });
-        return out;
-      }
-      const total = items.reduce((sum, item) => sum + item.value, 0);
-      const [a, b] = splitBalanced(items);
-      const sumA = a.reduce((sum, item) => sum + item.value, 0);
-      if (w >= d){
-        const wA = w * (sumA / total);
-        binaryTreemap(a, x, z, wA, d, out);
-        binaryTreemap(b, x + wA, z, w - wA, d, out);
-      } else {
-        const dA = d * (sumA / total);
-        binaryTreemap(a, x, z, w, dA, out);
-        binaryTreemap(b, x, z + dA, w, d - dA, out);
-      }
-      return out;
-    }
-
-    function buildLayout(){
-      const items = DATA.sectors
-        .slice()
-        .sort((a, b) => b.budgetMillion2026 - a.budgetMillion2026)
-        .map((sector) => ({ sector, value: Math.max(sector.budgetMillion2026, 40000) }));
-
-      const baseW = 180;
-      const baseD = 112;
-      const gap = 2.4;
-
-      return binaryTreemap(items, -baseW / 2, -baseD / 2, baseW, baseD).map(({ item, x, z, w, d }) => {
-        const innerW = Math.max(8, w - gap);
-        const innerD = Math.max(8, d - gap);
-        const centerX = x + w / 2;
-        const centerZ = z + d / 2;
-        return {
-          sector: item.sector,
-          x: centerX,
-          z: centerZ,
-          w: innerW,
-          d: innerD,
-          h: getBlockHeight(item.sector.techLevelPct)
-        };
-      });
-    }
-
-    function requestRender(){
-      renderRequested = true;
-    }
-
-    function buildLabels(){
-      labelLayer.innerHTML = '';
-      blocks.forEach((block) => {
-        const label = document.createElement('div');
-        label.className = 'floating-label';
-        label.innerHTML = escapeHtml(block.sector.shortCode);
-        labelLayer.appendChild(label);
-        block.label = label;
-      });
-    }
-
-    function updateLabels(){
-      if (!renderer || !camera) return;
-      const width = sceneWrap.clientWidth;
-      const height = sceneWrap.clientHeight;
-
-      blocks.forEach((block) => {
-        if (!block.label) return;
-        const worldPosition = block.group.position.clone();
-        worldPosition.y = block.h + 6;
-        const projected = worldPosition.project(camera);
-        const inFront = projected.z < 1;
-        const onScreen = projected.x >= -1.2 && projected.x <= 1.2 && projected.y >= -1.2 && projected.y <= 1.2;
-        if (!inFront || !onScreen){
-          block.label.classList.remove('show', 'selected');
-          return;
-        }
-        const x = (projected.x * 0.5 + 0.5) * width;
-        const y = (-projected.y * 0.5 + 0.5) * height;
-        block.label.style.left = `${x}px`;
-        block.label.style.top = `${y}px`;
-        block.label.classList.add('show');
-        block.label.classList.toggle('selected', state.selectedSectorId === block.sector.id);
-      });
-    }
-
-    function syncBlockStyles(){
-      if (!THREE_NS) return;
-      blocks.forEach((block) => {
-        const selected = block.sector.id === state.selectedSectorId;
-        const hovered = block.sector.id === state.hoverSectorId;
-        const emphasis = selected ? 1 : hovered ? 0.55 : 0;
-        block.body.material.emissive = new THREE_NS.Color(shade(block.sector.color, -0.42));
-        block.body.material.emissiveIntensity = emphasis * 0.55;
-        block.body.material.color.set(selected ? shade(block.sector.color, -0.04) : hovered ? shade(block.sector.color, -0.01) : shade(block.sector.color, -0.10));
-        block.cap.material.color.set(selected ? shade(block.sector.color, 0.18) : hovered ? shade(block.sector.color, 0.14) : shade(block.sector.color, 0.10));
-        block.edge.material.opacity = selected ? 0.72 : hovered ? 0.32 : 0.12;
-        block.glow.material.opacity = selected ? 0.24 : hovered ? 0.16 : 0.06;
-      });
-      requestRender();
-    }
-
-    function clearSelectionGroup(){
-      if (!selectionGroup) return;
-      while (selectionGroup.children.length){
-        const child = selectionGroup.children[0];
-        selectionGroup.remove(child);
-        if (child.geometry) child.geometry.dispose?.();
-        if (child.material){
-          if (Array.isArray(child.material)) child.material.forEach((m) => m.dispose?.());
-          else child.material.dispose?.();
-        }
-      }
-    }
-
-    function update3DSelection(){
-      if (!selectionGroup || !THREE_NS){
-        renderStatusCard();
-        renderSectorStrip();
-        return;
-      }
-      clearSelectionGroup();
-      syncBlockStyles();
-
-      const block = blocks.find((item) => item.sector.id === state.selectedSectorId);
-      if (block){
-        const outlineGeo = new THREE_NS.BoxGeometry(block.w + 2.2, block.h + 2.5, block.d + 2.2);
-        const outline = new THREE_NS.LineSegments(
-          new THREE_NS.EdgesGeometry(outlineGeo),
-          new THREE_NS.LineBasicMaterial({ color: 0xffffff, transparent: true, opacity: state.theme === 'light' ? 0.78 : 0.64 })
-        );
-        outline.position.copy(block.group.position);
-        outline.position.y = block.h / 2 + 1.25;
-        selectionGroup.add(outline);
-
-        const plate = new THREE_NS.Mesh(
-          new THREE_NS.PlaneGeometry(block.w + 5, block.d + 5),
-          new THREE_NS.MeshBasicMaterial({
-            color: block.sector.color,
-            transparent: true,
-            opacity: state.theme === 'light' ? 0.22 : 0.18,
-            side: THREE_NS.DoubleSide
-          })
-        );
-        plate.rotation.x = -Math.PI / 2;
-        plate.position.set(block.group.position.x, 0.11, block.group.position.z);
-        selectionGroup.add(plate);
-      }
-
-      renderStatusCard();
-      renderSectorStrip();
-      requestRender();
-    }
-
-    function syncThreeTheme(){
-      if (!THREE_NS || !scene || !renderer) return;
-
-      const theme = state.theme === 'light'
-        ? {
-            background: '#eef4fb',
-            fog: '#eef4fb',
-            floor: '#f8fbff',
-            gridStrong: '#c8d9ec',
-            gridWeak: '#dce7f3',
-            ambient: 1.08,
-            hemi: 0.84,
-            key: 1.55,
-            rim: 0.44
-          }
-        : {
-            background: '#07101d',
-            fog: '#07101d',
-            floor: '#091426',
-            gridStrong: '#234162',
-            gridWeak: '#132740',
-            ambient: 0.84,
-            hemi: 0.52,
-            key: 1.72,
-            rim: 0.54
-          };
-
-      scene.background = new THREE_NS.Color(theme.background);
-      scene.fog = new THREE_NS.FogExp2(theme.fog, state.theme === 'light' ? 0.0038 : 0.0058);
-      floor.material.color.set(theme.floor);
-      grid.material[0].color.set(theme.gridStrong);
-      grid.material[1].color.set(theme.gridWeak);
-      ambientLight.intensity = theme.ambient;
-      hemiLight.intensity = theme.hemi;
-      keyLight.intensity = theme.key;
-      rimLight.intensity = theme.rim;
-      update3DSelection();
-      requestRender();
-    }
-
-    function resizeRenderer(){
-      if (!renderer || !camera) return;
-      const width = sceneWrap.clientWidth;
-      const height = sceneWrap.clientHeight;
-      renderer.setSize(width, height, false);
-      camera.aspect = width / Math.max(height, 1);
-      camera.updateProjectionMatrix();
-      requestRender();
-    }
-
-    function getIntersectedSector(clientX, clientY){
-      if (!raycaster.current || !camera || !renderer) return null;
-      const rect = canvas.getBoundingClientRect();
-      pointer.x = ((clientX - rect.left) / rect.width) * 2 - 1;
-      pointer.y = -((clientY - rect.top) / rect.height) * 2 + 1;
-      raycaster.current.setFromCamera(pointer, camera);
-      const intersects = raycaster.current.intersectObjects(blocks.map((block) => block.body), false);
-      if (!intersects.length) return null;
-      return intersects[0].object.userData.sectorId || null;
-    }
-
-    function bindCanvasEvents(){
-      canvas.addEventListener('pointerdown', (event) => {
-        lastPointerDown = { x: event.clientX, y: event.clientY };
-        canvas.classList.add('dragging');
-      });
-
-      window.addEventListener('pointerup', () => {
-        canvas.classList.remove('dragging');
-      });
-
-      canvas.addEventListener('pointermove', (event) => {
-        const sectorId = getIntersectedSector(event.clientX, event.clientY);
-        if (state.hoverSectorId !== sectorId){
-          state.hoverSectorId = sectorId;
-          syncBlockStyles();
-          renderStatusCard();
-        }
-        canvas.style.cursor = sectorId ? 'pointer' : 'grab';
-      });
-
-      canvas.addEventListener('pointerleave', () => {
-        state.hoverSectorId = null;
-        canvas.style.cursor = 'grab';
-        syncBlockStyles();
-        renderStatusCard();
-      });
-
-      canvas.addEventListener('click', (event) => {
-        if (!lastPointerDown) return;
-        const moved = Math.hypot(event.clientX - lastPointerDown.x, event.clientY - lastPointerDown.y);
-        if (moved > 6) return;
-        const sectorId = getIntersectedSector(event.clientX, event.clientY);
-        if (sectorId){
-          selectSector(sectorId);
-        }
-      });
-    }
-
-    function resetCamera(){
-      if (!camera || !controls) return;
-      camera.position.set(126, 122, 152);
-      controls.target.set(0, 18, 0);
-      controls.update();
-      state.hoverSectorId = null;
-      clearSelection();
-      requestRender();
-    }
-
-    resetViewBtn.addEventListener('click', resetCamera);
-
-    async function initThree(){
-      try {
-        THREE_NS = await import('https://cdn.jsdelivr.net/npm/three@0.162.0/build/three.module.js');
-        ({ OrbitControls: OrbitControlsClass } = await import('https://cdn.jsdelivr.net/npm/three@0.162.0/examples/jsm/controls/OrbitControls.js'));
-      } catch (error) {
-        showError('3D 엔진을 불러오지 못했습니다.', '네트워크 또는 CDN 접근 상태를 확인하세요. 아래 분야 칩을 눌러 상세 정보는 계속 볼 수 있습니다.');
-        console.error(error);
-        return;
-      }
-
-      if (!canvas.getContext('webgl2') && !canvas.getContext('webgl')){
-        showError('브라우저에서 WebGL을 사용할 수 없습니다.', '아래 분야 칩을 눌러 상세 정보는 계속 볼 수 있습니다.');
-        return;
-      }
-
-      renderer = new THREE_NS.WebGLRenderer({ canvas, antialias: true, alpha: false });
-      renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
-      renderer.shadowMap.enabled = true;
-      renderer.shadowMap.type = THREE_NS.PCFSoftShadowMap;
-      renderer.outputColorSpace = THREE_NS.SRGBColorSpace;
-
-      scene = new THREE_NS.Scene();
-      camera = new THREE_NS.PerspectiveCamera(44, 1, 0.1, 1000);
-      camera.position.set(126, 122, 152);
-
-      controls = new OrbitControlsClass(camera, renderer.domElement);
-      controls.target.set(0, 18, 0);
-      controls.enableDamping = true;
-      controls.dampingFactor = 0.065;
-      controls.enablePan = false;
-      controls.minDistance = 92;
-      controls.maxDistance = 300;
-      controls.minPolarAngle = 0.42;
-      controls.maxPolarAngle = 1.42;
-      controls.addEventListener('change', () => {
-        requestRender();
-      });
-
-      ambientLight = new THREE_NS.AmbientLight(0xffffff, 0.84);
-      hemiLight = new THREE_NS.HemisphereLight(0xbfdfff, 0x0b1322, 0.52);
-      keyLight = new THREE_NS.DirectionalLight(0xffffff, 1.72);
-      keyLight.position.set(86, 160, 72);
-      keyLight.castShadow = true;
-      keyLight.shadow.mapSize.width = 2048;
-      keyLight.shadow.mapSize.height = 2048;
-      keyLight.shadow.camera.left = -180;
-      keyLight.shadow.camera.right = 180;
-      keyLight.shadow.camera.top = 180;
-      keyLight.shadow.camera.bottom = -180;
-      keyLight.shadow.camera.near = 1;
-      keyLight.shadow.camera.far = 420;
-      keyLight.shadow.bias = -0.00012;
-
-      rimLight = new THREE_NS.DirectionalLight(0x7fb2ff, 0.54);
-      rimLight.position.set(-120, 72, -94);
-
-      scene.add(ambientLight, hemiLight, keyLight, rimLight);
-
-      floor = new THREE_NS.Mesh(
-        new THREE_NS.PlaneGeometry(250, 170),
-        new THREE_NS.MeshStandardMaterial({ color: 0x091426, roughness: 0.95, metalness: 0.04 })
-      );
-      floor.rotation.x = -Math.PI / 2;
-      floor.receiveShadow = true;
-      floor.position.y = 0;
-      scene.add(floor);
-
-      grid = new THREE_NS.GridHelper(250, 34, 0x234162, 0x132740);
-      grid.position.y = 0.02;
-      scene.add(grid);
-
-      mapGroup = new THREE_NS.Group();
-      scene.add(mapGroup);
-
-      selectionGroup = new THREE_NS.Group();
-      scene.add(selectionGroup);
-
-      const layout = buildLayout();
-      blocks = layout.map((entry) => {
-        const group = new THREE_NS.Group();
-        group.position.set(entry.x, 0, entry.z);
-
-        const body = new THREE_NS.Mesh(
-          new THREE_NS.BoxGeometry(entry.w, entry.h, entry.d),
-          new THREE_NS.MeshStandardMaterial({
-            color: shade(entry.sector.color, -0.10),
-            roughness: 0.56,
-            metalness: 0.08
-          })
-        );
-        body.position.y = entry.h / 2;
-        body.castShadow = true;
-        body.receiveShadow = true;
-        body.userData.sectorId = entry.sector.id;
-
-        const cap = new THREE_NS.Mesh(
-          new THREE_NS.BoxGeometry(entry.w * 0.96, 1.25, entry.d * 0.96),
-          new THREE_NS.MeshStandardMaterial({
-            color: shade(entry.sector.color, 0.10),
-            roughness: 0.36,
-            metalness: 0.12
-          })
-        );
-        cap.position.y = entry.h + 0.72;
-        cap.castShadow = true;
-        cap.receiveShadow = true;
-
-        const edge = new THREE_NS.LineSegments(
-          new THREE_NS.EdgesGeometry(new THREE_NS.BoxGeometry(entry.w, entry.h, entry.d)),
-          new THREE_NS.LineBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.12 })
-        );
-        edge.position.y = entry.h / 2;
-
-        const glow = new THREE_NS.Mesh(
-          new THREE_NS.PlaneGeometry(entry.w * 1.04, entry.d * 1.04),
-          new THREE_NS.MeshBasicMaterial({
-            color: entry.sector.color,
-            transparent: true,
-            opacity: 0.06,
-            side: THREE_NS.DoubleSide
-          })
-        );
-        glow.rotation.x = -Math.PI / 2;
-        glow.position.y = 0.08;
-
-        group.add(glow, body, cap, edge);
-        mapGroup.add(group);
-
-        return {
-          sector: entry.sector,
-          group,
-          body,
-          cap,
-          edge,
-          glow,
-          w: entry.w,
-          d: entry.d,
-          h: entry.h
-        };
-      });
-
-      raycaster.current = new THREE_NS.Raycaster();
-      buildLabels();
-      bindCanvasEvents();
-      syncBlockStyles();
-      syncThreeTheme();
-      resizeRenderer();
-      update3DSelection();
-
-      const animate = () => {
-        animationFrameId = requestAnimationFrame(animate);
-        if (controls) controls.update();
-        if (!renderRequested) return;
-        renderRequested = false;
-        updateLabels();
-        renderer.render(scene, camera);
-      };
-
-      animate();
-      window.addEventListener('resize', resizeRenderer);
-    }
-
-    initThree();
   </script>
 </body>
 </html>
