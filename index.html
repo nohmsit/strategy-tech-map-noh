@@ -1,1420 +1,692 @@
-
 <!DOCTYPE html>
 <html lang="ko">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>국가전략기술 3D 맵</title>
+  <title>국가전략기술 Strategic Map</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700;800;900&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
   <script src="data.js"></script>
   <style>
-    :root{
-      --bg:#04101c;
-      --bg2:rgba(8,21,39,.90);
-      --bg3:rgba(11,26,47,.94);
-      --panel:rgba(8,21,39,.92);
-      --panel2:rgba(14,31,54,.94);
-      --line:rgba(143,166,204,.16);
-      --line-strong:rgba(143,166,204,.28);
-      --text:#edf3ff;
-      --text-dim:#9cb0d3;
-      --accent:#a9d2ff;
-      --accent-2:#d7e6ff;
-      --shadow:0 30px 80px rgba(0,0,0,.42);
-      --radius:26px;
+    :root {
+      --bg: #07111f;
+      --bg2: #0b1627;
+      --panel: rgba(10, 21, 39, 0.92);
+      --panel-2: rgba(14, 28, 49, 0.94);
+      --line: rgba(148, 163, 184, 0.16);
+      --line-strong: rgba(148, 163, 184, 0.28);
+      --text: #e5eefb;
+      --text-dim: #8ea0bd;
+      --accent: #90caf9;
+      --shadow: 0 30px 80px rgba(0,0,0,0.28);
+      --radius: 22px;
     }
-    *{box-sizing:border-box}
-    html,body{height:100%}
-    body{
-      margin:0;
-      color:var(--text);
-      font-family:'Noto Sans KR',sans-serif;
+
+    * { box-sizing: border-box; }
+    html, body { height: 100%; }
+    body {
+      margin: 0;
+      font-family: 'Noto Sans KR', sans-serif;
+      color: var(--text);
       background:
-        radial-gradient(circle at 20% 16%, rgba(71,115,178,.22), transparent 28%),
-        radial-gradient(circle at 78% 8%, rgba(123,181,226,.14), transparent 24%),
-        radial-gradient(circle at 52% 110%, rgba(29,114,150,.14), transparent 42%),
-        linear-gradient(180deg,#040c16 0%, #06111e 38%, #081322 100%);
-      overflow:hidden;
+        radial-gradient(circle at 18% 18%, rgba(91, 129, 188, 0.20), transparent 28%),
+        radial-gradient(circle at 82% 10%, rgba(159, 128, 255, 0.13), transparent 24%),
+        radial-gradient(circle at 50% 120%, rgba(25, 146, 132, 0.14), transparent 40%),
+        linear-gradient(180deg, #06101d 0%, #091523 48%, #08111d 100%);
+      overflow: hidden;
     }
-    body::before{
-      content:"";
-      position:fixed; inset:0;
-      background-image:
-        linear-gradient(rgba(255,255,255,.03) 1px, transparent 1px),
-        linear-gradient(90deg, rgba(255,255,255,.03) 1px, transparent 1px);
-      background-size:36px 36px;
-      mask-image:radial-gradient(circle at 50% 45%, rgba(0,0,0,.75), transparent 78%);
-      opacity:.25;
-      pointer-events:none;
+
+    .topbar {
+      position: relative;
+      z-index: 10;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      padding: 18px 26px 12px;
     }
-    #app{position:relative; height:100%; width:100%;}
-    .topbar{
-      position:absolute;
-      inset:18px 18px auto 18px;
-      z-index:20;
-      display:flex;
-      align-items:flex-start;
-      justify-content:space-between;
-      gap:16px;
-      pointer-events:none;
+
+    .eyebrow {
+      font-size: 11px;
+      letter-spacing: 0.24em;
+      color: var(--text-dim);
+      text-transform: uppercase;
+      margin-bottom: 6px;
+      font-weight: 800;
     }
-    .brand{
-      pointer-events:auto;
-      background:linear-gradient(180deg, rgba(9,22,41,.88), rgba(8,18,34,.74));
-      border:1px solid var(--line);
-      border-radius:22px;
-      box-shadow:var(--shadow);
-      padding:16px 18px 15px;
-      backdrop-filter:blur(16px);
-      min-width:320px;
+
+    h1 {
+      margin: 0;
+      font-size: 28px;
+      line-height: 1.08;
+      font-weight: 900;
+      letter-spacing: -0.03em;
     }
-    .brand-eyebrow{
-      display:inline-flex;
-      align-items:center;
-      gap:8px;
-      font-size:11px;
-      letter-spacing:.16em;
-      text-transform:uppercase;
-      color:#bfd7ff;
-      margin-bottom:8px;
-      font-weight:800;
+
+    .topbar .right {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      justify-content: flex-end;
     }
-    .brand-eyebrow::before{
-      content:"";
-      width:10px;height:10px;border-radius:50%;
-      background:linear-gradient(135deg,#d6ebff,#98c0ff);
-      box-shadow:0 0 18px rgba(169,210,255,.55);
+
+    .top-kpi {
+      min-width: 128px;
+      padding: 12px 14px;
+      border-radius: 16px;
+      background: linear-gradient(180deg, rgba(14,25,42,0.84), rgba(10,18,31,0.84));
+      border: 1px solid var(--line);
+      box-shadow: inset 0 1px 0 rgba(255,255,255,0.05);
+      backdrop-filter: blur(14px);
+      text-align: right;
     }
-    .brand h1{
-      margin:0;
-      font-size:32px;
-      line-height:1.08;
-      font-weight:900;
-      letter-spacing:-.03em;
+
+    .top-kpi .num {
+      display: block;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 22px;
+      line-height: 1.05;
+      color: #f7fbff;
+      font-weight: 700;
     }
-    .brand-sub{
-      margin-top:8px;
-      color:var(--text-dim);
-      font-size:13px;
-      line-height:1.5;
+
+    .top-kpi .label {
+      display: block;
+      margin-top: 5px;
+      font-size: 11px;
+      color: var(--text-dim);
+      white-space: nowrap;
     }
-    .top-stats{
-      display:flex;
-      gap:10px;
-      flex-wrap:wrap;
-      justify-content:flex-end;
-      pointer-events:auto;
+
+    .page {
+      position: relative;
+      height: calc(100vh - 98px);
+      padding: 0 18px 18px;
     }
-    .stat-chip{
-      min-width:132px;
-      background:linear-gradient(180deg, rgba(9,22,41,.88), rgba(8,18,34,.76));
-      border:1px solid var(--line);
-      border-radius:18px;
-      padding:14px 16px 12px;
-      backdrop-filter:blur(16px);
-      box-shadow:var(--shadow);
+
+    .map-card {
+      position: relative;
+      height: 100%;
+      border-radius: 28px;
+      background: linear-gradient(180deg, rgba(9, 20, 35, 0.72), rgba(7, 16, 29, 0.92));
+      border: 1px solid var(--line);
+      box-shadow: var(--shadow), inset 0 1px 0 rgba(255,255,255,0.04);
+      overflow: hidden;
+      isolation: isolate;
     }
-    .stat-chip .label{
-      display:block;
-      font-size:11px;
-      color:var(--text-dim);
-      margin-bottom:6px;
-      letter-spacing:.08em;
-      text-transform:uppercase;
-      font-weight:700;
-    }
-    .stat-chip .value{
-      display:block;
-      font-family:'JetBrains Mono', monospace;
-      font-size:24px;
-      line-height:1;
-      font-weight:700;
-      color:var(--accent-2);
-    }
-    .stat-chip .sub{
-      display:block;
-      margin-top:6px;
-      font-size:12px;
-      color:#bfd4f7;
-    }
-    .ghost-btn{
-      border:1px solid var(--line-strong);
-      background:linear-gradient(180deg, rgba(18,36,61,.94), rgba(12,27,48,.92));
-      color:var(--text);
-      border-radius:16px;
-      padding:14px 18px;
-      font-size:13px;
-      font-weight:800;
-      cursor:pointer;
-      backdrop-filter:blur(14px);
-      box-shadow:var(--shadow);
-      transition:.2s ease;
-    }
-    .ghost-btn:hover{border-color:rgba(180,210,255,.45); transform:translateY(-1px);}
-    .scene-wrap{
-      position:absolute;
-      inset:0;
-      overflow:hidden;
-    }
-    #webgl, #labels{
-      position:absolute;
-      inset:0;
-      width:100%;
-      height:100%;
-      display:block;
-    }
-    #labels{pointer-events:none}
-    .sector-label{
-      color:#f2f7ff;
-      font-size:13px;
-      font-weight:800;
-      line-height:1.1;
-      letter-spacing:-.02em;
-      white-space:nowrap;
-      transform:translate(-50%,-50%);
-      padding:8px 12px;
-      border-radius:999px;
-      background:rgba(9,21,39,.76);
-      border:1px solid rgba(202,224,255,.26);
-      box-shadow:0 12px 24px rgba(0,0,0,.28);
-      backdrop-filter:blur(10px);
-      transition:.18s ease;
-    }
-    .sector-label.active{
-      background:rgba(212,230,255,.94);
-      color:#07203c;
-      border-color:rgba(255,255,255,.78);
-      box-shadow:0 0 0 1px rgba(255,255,255,.35), 0 16px 34px rgba(137,189,255,.45);
-    }
-    .sector-label .label-budget{
-      display:block;
-      margin-top:4px;
-      font-size:10px;
-      font-weight:700;
-      opacity:.74;
-    }
-    .tooltip{
-      position:absolute;
-      z-index:25;
-      pointer-events:none;
-      min-width:160px;
-      max-width:280px;
-      background:rgba(8,21,39,.94);
-      border:1px solid rgba(197,220,255,.22);
-      color:var(--text);
-      padding:11px 12px 10px;
-      border-radius:14px;
-      box-shadow:0 18px 50px rgba(0,0,0,.42);
-      backdrop-filter:blur(14px);
-      opacity:0;
-      transform:translate3d(0,10px,0);
-      transition:opacity .14s ease, transform .14s ease;
-    }
-    .tooltip.visible{opacity:1; transform:translate3d(0,0,0);}
-    .tooltip-title{font-size:13px; font-weight:800; margin-bottom:6px;}
-    .tooltip-sub{font-size:12px; color:var(--text-dim); line-height:1.45}
-    .panel{
-      position:absolute;
-      top:18px;
-      right:18px;
-      bottom:18px;
-      width:min(420px, calc(100vw - 36px));
-      z-index:30;
+
+    .map-card::before {
+      content: "";
+      position: absolute;
+      inset: 0;
       background:
-        linear-gradient(180deg, rgba(10,23,41,.94), rgba(8,19,36,.92));
-      border:1px solid var(--line);
-      border-radius:28px;
-      box-shadow:var(--shadow);
-      backdrop-filter:blur(18px);
-      overflow:hidden;
-      transform:translateX(calc(100% + 24px));
-      transition:transform .28s cubic-bezier(.2,.8,.2,1);
+        linear-gradient(180deg, rgba(255,255,255,0.02), transparent 22%),
+        radial-gradient(circle at 50% 80%, rgba(70, 120, 180, 0.18), transparent 28%);
+      pointer-events: none;
     }
-    .panel.open{transform:translateX(0)}
-    .panel-shell{
-      display:flex;
-      flex-direction:column;
-      height:100%;
-      min-height:0;
+
+    .map-wrap {
+      position: absolute;
+      inset: 0;
+      padding: 10px;
     }
-    .panel-head{
-      display:flex;
-      align-items:flex-start;
-      gap:12px;
-      justify-content:space-between;
-      padding:20px 20px 16px;
-      border-bottom:1px solid var(--line);
-      background:linear-gradient(180deg, rgba(255,255,255,.02), rgba(255,255,255,0));
+
+    #strategicMap {
+      width: 100%;
+      height: 100%;
+      display: block;
     }
-    .panel-title-block{min-width:0}
-    .panel-kicker{
-      font-size:11px;
-      font-weight:800;
-      letter-spacing:.14em;
-      text-transform:uppercase;
-      color:#b9d6ff;
-      margin-bottom:6px;
+
+    .sector-group {
+      cursor: pointer;
+      transition: transform 180ms ease, filter 180ms ease, opacity 180ms ease;
+      transform-box: fill-box;
+      transform-origin: center;
     }
-    .panel-title{
-      font-size:28px;
-      line-height:1.08;
-      font-weight:900;
-      letter-spacing:-.03em;
-      margin:0;
-      word-break:keep-all;
+
+    .sector-group:hover {
+      transform: translate(-8px, -10px);
+      filter: url(#hoverShadow);
     }
-    .panel-subtitle{
-      margin-top:8px;
-      font-size:13px;
-      line-height:1.45;
-      color:var(--text-dim);
+
+    .sector-group.is-selected {
+      transform: translate(-10px, -14px);
+      filter: url(#selectedShadow);
     }
-    .close-btn{
-      flex-shrink:0;
-      width:38px;height:38px;border-radius:12px;
-      border:1px solid var(--line-strong);
-      background:rgba(255,255,255,.03);
-      color:var(--text);
-      font-size:20px;
-      cursor:pointer;
-      transition:.2s ease;
+
+    .sector-top {
+      stroke: rgba(255,255,255,0.82);
+      stroke-width: 1.4;
     }
-    .close-btn:hover{background:rgba(255,255,255,.07); border-color:rgba(255,255,255,.38);}
-    .panel-body{
-      padding:18px 20px 22px;
-      overflow:auto;
-      min-height:0;
+
+    .sector-side,
+    .sector-front {
+      stroke: rgba(255,255,255,0.18);
+      stroke-width: 1.1;
     }
-    .hero-metrics{
-      display:grid;
-      grid-template-columns:repeat(2,minmax(0,1fr));
-      gap:10px;
-      margin-bottom:16px;
+
+    .sector-cap {
+      fill: rgba(255,255,255,0.30);
+      pointer-events: none;
     }
-    .hero-metrics.three{
-      grid-template-columns:repeat(3,minmax(0,1fr));
+
+    .sector-outline {
+      fill: none;
+      stroke: rgba(255,255,255,0.85);
+      stroke-width: 3.4;
+      opacity: 0;
+      pointer-events: none;
     }
-    .metric-card{
-      background:linear-gradient(180deg, rgba(255,255,255,.03), rgba(255,255,255,.015));
-      border:1px solid var(--line);
-      border-radius:18px;
-      padding:14px 14px 12px;
+
+    .sector-group.is-selected .sector-outline {
+      opacity: 1;
     }
-    .metric-label{
-      display:block;
-      font-size:11px;
-      color:var(--text-dim);
-      margin-bottom:8px;
-      font-weight:700;
-      letter-spacing:.08em;
-      text-transform:uppercase;
+
+    .sector-label {
+      pointer-events: none;
+      text-anchor: middle;
+      font-weight: 800;
+      letter-spacing: -0.02em;
     }
-    .metric-value{
-      display:block;
-      font-family:'JetBrains Mono', monospace;
-      font-size:22px;
-      font-weight:700;
-      line-height:1.05;
-      color:#f7fbff;
+
+    .sector-label tspan {
+      dominant-baseline: middle;
     }
-    .metric-sub{
-      display:block;
-      margin-top:7px;
-      color:#b8ccee;
-      font-size:12px;
+
+    .sector-metric {
+      font-size: 12px;
+      font-weight: 700;
+      opacity: 0.86;
     }
-    .section{
-      margin-top:14px;
-      background:linear-gradient(180deg, rgba(255,255,255,.02), rgba(255,255,255,.01));
-      border:1px solid var(--line);
-      border-radius:20px;
-      overflow:hidden;
+
+    .sector-rank {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 11px;
+      opacity: 0.72;
     }
-    .section-header{
-      padding:14px 16px 12px;
-      border-bottom:1px solid var(--line);
-      display:flex;
-      align-items:flex-end;
-      justify-content:space-between;
-      gap:12px;
+
+    .drawer {
+      position: fixed;
+      right: 18px;
+      top: 18px;
+      bottom: 18px;
+      width: min(460px, calc(100vw - 28px));
+      border-radius: 26px;
+      background: linear-gradient(180deg, var(--panel), var(--panel-2));
+      border: 1px solid var(--line-strong);
+      box-shadow: 0 30px 100px rgba(0,0,0,0.42);
+      backdrop-filter: blur(18px);
+      transform: translateX(calc(100% + 32px));
+      transition: transform 260ms cubic-bezier(.2,.72,.2,1);
+      z-index: 30;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
     }
-    .section-title{
-      font-size:14px;
-      font-weight:900;
-      letter-spacing:-.02em;
+
+    .drawer.open { transform: translateX(0); }
+
+    .drawer-header {
+      padding: 22px 22px 16px;
+      border-bottom: 1px solid var(--line);
+      display: flex;
+      gap: 14px;
+      align-items: flex-start;
     }
-    .section-meta{
-      color:var(--text-dim);
-      font-size:11px;
-      font-weight:700;
+
+    .drawer-color {
+      width: 18px;
+      height: 18px;
+      border-radius: 6px;
+      box-shadow: 0 0 0 3px rgba(255,255,255,0.06);
+      flex: 0 0 auto;
+      margin-top: 6px;
     }
-    .section-body{padding:12px 14px 14px;}
-    .tech-compare{
-      display:flex;
-      flex-direction:column;
-      gap:8px;
+
+    .drawer-eyebrow {
+      margin: 0 0 6px;
+      font-size: 11px;
+      font-weight: 800;
+      letter-spacing: 0.18em;
+      color: var(--text-dim);
+      text-transform: uppercase;
     }
-    .tech-row{
-      width:100%;
-      border:1px solid var(--line);
-      background:rgba(255,255,255,.02);
-      border-radius:16px;
-      padding:11px 12px 10px;
-      cursor:pointer;
-      text-align:left;
-      color:var(--text);
-      transition:.18s ease;
+
+    .drawer-title {
+      margin: 0;
+      font-size: 30px;
+      line-height: 1.02;
+      font-weight: 900;
+      letter-spacing: -0.04em;
     }
-    .tech-row:hover{
-      border-color:rgba(202,224,255,.30);
-      background:rgba(255,255,255,.045);
-      transform:translateY(-1px);
+
+    .drawer-close {
+      margin-left: auto;
+      width: 42px;
+      height: 42px;
+      border-radius: 14px;
+      border: 1px solid var(--line);
+      background: rgba(255,255,255,0.04);
+      color: var(--text);
+      cursor: pointer;
+      font-size: 22px;
+      line-height: 1;
     }
-    .tech-row.active{
-      border-color:rgba(226,238,255,.64);
-      background:linear-gradient(180deg, rgba(220,236,255,.16), rgba(130,165,214,.10));
-      box-shadow:0 0 0 1px rgba(255,255,255,.08);
+
+    .drawer-close:hover { background: rgba(255,255,255,0.08); }
+
+    .drawer-body {
+      flex: 1;
+      min-height: 0;
+      overflow-y: auto;
+      padding: 18px 22px 24px;
     }
-    .tech-row-top{
-      display:flex;
-      align-items:flex-start;
-      justify-content:space-between;
-      gap:12px;
-      margin-bottom:8px;
+
+    .metric-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0,1fr));
+      gap: 10px;
+      margin-bottom: 16px;
     }
-    .tech-row-name{
-      font-size:13px;
-      font-weight:800;
-      line-height:1.35;
-      word-break:keep-all;
-      flex:1;
+
+    .metric-card {
+      background: rgba(255,255,255,0.04);
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      padding: 14px 14px 13px;
+      min-width: 0;
     }
-    .tech-row-level{
-      flex-shrink:0;
-      font-family:'JetBrains Mono', monospace;
-      font-size:13px;
-      font-weight:700;
-      color:#f3f8ff;
+
+    .metric-card .k {
+      font-size: 11px;
+      color: var(--text-dim);
+      margin-bottom: 7px;
+      display: block;
     }
-    .tech-row-level span{
-      display:block;
-      font-size:10px;
-      color:var(--text-dim);
-      margin-bottom:3px;
-      text-transform:uppercase;
-      letter-spacing:.08em;
-      font-weight:700;
+
+    .metric-card .v {
+      font-size: 24px;
+      font-weight: 900;
+      line-height: 1;
+      letter-spacing: -0.04em;
     }
-    .level-track{
-      width:100%;
-      height:10px;
-      border-radius:999px;
-      background:rgba(255,255,255,.08);
-      overflow:hidden;
-      margin-bottom:7px;
+
+    .metric-card .sub {
+      margin-top: 6px;
+      font-size: 11px;
+      color: var(--text-dim);
     }
-    .level-fill{
-      height:100%;
-      border-radius:999px;
-      background:linear-gradient(90deg, rgba(255,255,255,.20), rgba(255,255,255,.92));
-      box-shadow:0 0 18px rgba(255,255,255,.22);
+
+    .tabs {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 8px;
+      margin-bottom: 16px;
     }
-    .tech-row-meta{
-      display:flex;
-      justify-content:space-between;
-      gap:10px;
-      color:var(--text-dim);
-      font-size:11px;
-      line-height:1.3;
+
+    .tab-btn {
+      appearance: none;
+      border: 1px solid var(--line);
+      background: rgba(255,255,255,0.04);
+      color: var(--text-dim);
+      border-radius: 999px;
+      padding: 10px 12px;
+      font-size: 13px;
+      font-weight: 700;
+      cursor: pointer;
     }
-    .dept-list, .project-list{
-      display:flex;
-      flex-direction:column;
-      gap:8px;
+
+    .tab-btn.active {
+      color: #07111f;
+      background: #eaf5ff;
+      border-color: rgba(255,255,255,0.8);
     }
-    .dept-row{
-      background:rgba(255,255,255,.02);
-      border:1px solid var(--line);
-      border-radius:16px;
-      padding:10px 12px;
+
+    .tab-panel { display: none; }
+    .tab-panel.active { display: block; }
+
+    .tech-grid {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 10px;
     }
-    .dept-top{
-      display:flex;
-      align-items:center;
-      justify-content:space-between;
-      gap:10px;
-      margin-bottom:7px;
-      font-size:13px;
-      font-weight:800;
+
+    .tech-card {
+      border: 1px solid var(--line);
+      background: rgba(255,255,255,0.035);
+      border-radius: 18px;
+      padding: 14px 14px 12px;
     }
-    .dept-name{word-break:keep-all}
-    .dept-track{
-      height:9px;
-      border-radius:999px;
-      background:rgba(255,255,255,.07);
-      overflow:hidden;
-      margin-bottom:7px;
+
+    .tech-title {
+      font-size: 15px;
+      font-weight: 800;
+      line-height: 1.45;
+      margin-bottom: 10px;
+      word-break: keep-all;
     }
-    .dept-fill{
-      height:100%;
-      border-radius:999px;
-      background:linear-gradient(90deg, rgba(255,255,255,.18), rgba(168,205,255,.95));
+
+    .tech-meta {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 7px;
+      margin-bottom: 10px;
     }
-    .dept-meta{
-      display:flex;
-      justify-content:space-between;
-      gap:10px;
-      font-size:11px;
-      color:var(--text-dim);
+
+    .pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      padding: 6px 9px;
+      border-radius: 999px;
+      font-size: 11px;
+      font-weight: 700;
+      color: #edf4ff;
+      background: rgba(255,255,255,0.06);
+      border: 1px solid rgba(255,255,255,0.08);
     }
-    .project-card{
-      background:rgba(255,255,255,.02);
-      border:1px solid var(--line);
-      border-radius:18px;
-      padding:12px 12px 11px;
+
+    .tech-level-bar {
+      height: 8px;
+      border-radius: 999px;
+      background: rgba(255,255,255,0.06);
+      overflow: hidden;
     }
-    .project-top{
-      display:flex;
-      align-items:flex-start;
-      justify-content:space-between;
-      gap:12px;
-      margin-bottom:9px;
+
+    .tech-level-fill {
+      height: 100%;
+      border-radius: 999px;
     }
-    .project-title{
-      font-size:13px;
-      font-weight:800;
-      line-height:1.42;
-      word-break:keep-all;
-      flex:1;
+
+    .search-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 12px;
     }
-    .project-budget{
-      flex-shrink:0;
-      text-align:right;
-      min-width:98px;
+
+    .search-input {
+      width: 100%;
+      border: 1px solid var(--line);
+      background: rgba(255,255,255,0.04);
+      color: var(--text);
+      border-radius: 14px;
+      padding: 12px 14px;
+      font-size: 14px;
+      outline: none;
     }
-    .project-budget .y26{
-      font-family:'JetBrains Mono', monospace;
-      font-size:12px;
-      font-weight:700;
-      color:#f4f8ff;
+
+    .search-input:focus {
+      border-color: rgba(255,255,255,0.32);
     }
-    .project-budget .y25{
-      margin-top:4px;
-      font-size:11px;
-      color:var(--text-dim);
+
+    .search-count {
+      white-space: nowrap;
+      font-size: 12px;
+      color: var(--text-dim);
     }
-    .project-sub{
-      display:flex;
-      flex-wrap:wrap;
-      align-items:center;
-      gap:6px 8px;
-      font-size:11px;
-      line-height:1.4;
-      color:var(--text-dim);
+
+    .project-list {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      max-height: calc(100vh - 360px);
+      overflow-y: auto;
+      padding-right: 2px;
     }
-    .mini-pill{
-      display:inline-flex;
-      align-items:center;
-      gap:6px;
-      padding:4px 8px;
-      border-radius:999px;
-      background:rgba(255,255,255,.05);
-      border:1px solid var(--line);
-      color:#d7e6ff;
-      font-size:11px;
-      font-weight:700;
-      line-height:1;
+
+    .project-card {
+      padding: 13px 14px;
+      border-radius: 16px;
+      border: 1px solid var(--line);
+      background: rgba(255,255,255,0.035);
     }
-    .empty{
-      padding:28px 16px;
-      text-align:center;
-      color:var(--text-dim);
-      font-size:13px;
-      line-height:1.6;
+
+    .project-top {
+      display: flex;
+      align-items: flex-start;
+      gap: 12px;
+      justify-content: space-between;
     }
-    .open-placeholder{
-      position:absolute;
-      right:18px;
-      bottom:18px;
-      z-index:18;
-      pointer-events:none;
+
+    .project-name {
+      font-size: 14px;
+      font-weight: 800;
+      line-height: 1.45;
+      letter-spacing: -0.01em;
+      word-break: keep-all;
     }
-    .status-chip{
-      display:inline-flex;
-      align-items:center;
-      gap:8px;
-      background:rgba(8,21,39,.82);
-      border:1px solid var(--line);
-      color:#dce8ff;
-      border-radius:999px;
-      padding:10px 14px;
-      font-size:12px;
-      font-weight:800;
-      box-shadow:var(--shadow);
-      backdrop-filter:blur(12px);
+
+    .project-budget {
+      white-space: nowrap;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 13px;
+      font-weight: 700;
+      margin-left: 12px;
+      color: #f7fbff;
     }
-    .status-chip::before{
-      content:"";
-      width:8px;height:8px;border-radius:50%;
-      background:linear-gradient(135deg,#d7ecff,#a6d1ff);
-      box-shadow:0 0 14px rgba(166,209,255,.65);
+
+    .project-sub {
+      margin-top: 6px;
+      font-size: 12px;
+      color: var(--text-dim);
+      line-height: 1.5;
     }
-    .mono{font-family:'JetBrains Mono', monospace}
-    @media (max-width: 1180px){
-      .brand h1{font-size:28px}
-      .panel{width:min(390px, calc(100vw - 28px)); right:14px; top:14px; bottom:14px}
-      .topbar{inset:14px 14px auto 14px}
-      .ghost-btn{padding:12px 16px}
+
+    .ministry-list {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
     }
-    @media (max-width: 920px){
-      .topbar{
-        flex-direction:column;
-        align-items:stretch;
+
+    .ministry-row {
+      border: 1px solid var(--line);
+      background: rgba(255,255,255,0.035);
+      border-radius: 16px;
+      padding: 12px 13px;
+    }
+
+    .ministry-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      font-size: 13px;
+      font-weight: 800;
+      margin-bottom: 10px;
+    }
+
+    .bar-track {
+      width: 100%;
+      height: 8px;
+      border-radius: 999px;
+      background: rgba(255,255,255,0.06);
+      overflow: hidden;
+    }
+
+    .bar-fill {
+      height: 100%;
+      border-radius: 999px;
+    }
+
+    .empty {
+      color: var(--text-dim);
+      font-size: 13px;
+      line-height: 1.6;
+      padding: 8px 2px;
+    }
+
+    .backdrop {
+      position: fixed;
+      inset: 0;
+      background: rgba(3, 8, 15, 0.34);
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 260ms ease;
+      z-index: 24;
+    }
+
+    .backdrop.show {
+      opacity: 1;
+      pointer-events: auto;
+    }
+
+    .hud-reset {
+      position: absolute;
+      left: 22px;
+      bottom: 22px;
+      z-index: 6;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 12px 14px;
+      border-radius: 999px;
+      background: rgba(9, 17, 29, 0.72);
+      border: 1px solid var(--line);
+      color: var(--text);
+      font-weight: 700;
+      font-size: 13px;
+      cursor: pointer;
+      backdrop-filter: blur(10px);
+      opacity: 0;
+      pointer-events: none;
+      transform: translateY(8px);
+      transition: opacity 200ms ease, transform 200ms ease;
+    }
+
+    .hud-reset.show {
+      opacity: 1;
+      pointer-events: auto;
+      transform: translateY(0);
+    }
+
+    @media (max-width: 1180px) {
+      .topbar { padding: 16px 16px 10px; }
+      .page { padding: 0 12px 12px; }
+      .drawer {
+        right: 12px;
+        left: 12px;
+        width: auto;
       }
-      .brand{min-width:0}
-      .top-stats{justify-content:flex-start}
-      .panel{
-        top:auto;
-        left:12px;
-        right:12px;
-        bottom:12px;
-        width:auto;
-        height:min(74vh, 720px);
-      }
-      .hero-metrics.three{grid-template-columns:repeat(2,minmax(0,1fr))}
     }
-    @media (max-width: 620px){
-      .brand h1{font-size:24px}
-      .stat-chip{min-width:0; flex:1}
-      .hero-metrics, .hero-metrics.three{grid-template-columns:1fr 1fr}
-      .panel-head{padding:16px 16px 14px}
-      .panel-body{padding:14px 16px 18px}
-      .metric-value{font-size:19px}
-      .panel-title{font-size:23px}
-      .sector-label{font-size:11px; padding:7px 10px}
+
+    @media (max-width: 900px) {
+      body { overflow: auto; }
+      .topbar {
+        flex-direction: column;
+        align-items: flex-start;
+      }
+      .topbar .right {
+        width: 100%;
+        justify-content: flex-start;
+      }
+      .top-kpi {
+        min-width: 110px;
+        text-align: left;
+      }
+      .page {
+        height: auto;
+        min-height: calc(100vh - 142px);
+      }
+      .map-card {
+        height: calc(100vh - 180px);
+        min-height: 560px;
+      }
+      .drawer {
+        top: auto;
+        bottom: 10px;
+        right: 10px;
+        left: 10px;
+        height: min(78vh, 760px);
+        border-radius: 24px;
+        transform: translateY(calc(100% + 20px));
+      }
+      .drawer.open {
+        transform: translateY(0);
+      }
+      .project-list {
+        max-height: calc(78vh - 330px);
+      }
+    }
+
+    ::-webkit-scrollbar {
+      width: 8px;
+      height: 8px;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: rgba(255,255,255,0.16);
+      border-radius: 999px;
+    }
+    ::-webkit-scrollbar-track {
+      background: transparent;
     }
   </style>
 </head>
 <body>
-  <div id="app">
-    <div class="topbar">
-      <div class="brand">
-        <div class="brand-eyebrow">Strategic Technology 3D Map</div>
-        <h1>국가전략기술 3D 맵</h1>
-        <div class="brand-sub">2026 기준 · 2025 비교</div>
+  <header class="topbar">
+    <div>
+      <div class="eyebrow">Korea Strategic Tech</div>
+      <h1>국가전략기술 Strategic Map</h1>
+    </div>
+    <div class="right">
+      <div class="top-kpi">
+        <span class="num" id="kpi-total-budget">8.61</span>
+        <span class="label">2026 예산(조원)</span>
       </div>
-      <div class="top-stats">
-        <div class="stat-chip">
-          <span class="label">2026 총예산</span>
-          <span class="value" id="topBudget26">8.61조원</span>
-          <span class="sub">3D 맵 기준</span>
-        </div>
-        <div class="stat-chip">
-          <span class="label">2025 비교예산</span>
-          <span class="value" id="topBudget25">6.52조원</span>
-          <span class="sub">비교 기준</span>
-        </div>
-        <div class="stat-chip">
-          <span class="label">전략기술 / 세부기술</span>
-          <span class="value" id="topCounts">12 / 50</span>
-          <span class="sub" id="topGrowth">증가율 32.2%</span>
-        </div>
-        <button id="resetCameraBtn" class="ghost-btn" type="button">기본 시점</button>
+      <div class="top-kpi">
+        <span class="num" id="kpi-sector-count">12</span>
+        <span class="label">전략기술 분야</span>
+      </div>
+      <div class="top-kpi">
+        <span class="num" id="kpi-detail-count">50</span>
+        <span class="label">세부기술</span>
+      </div>
+      <div class="top-kpi">
+        <span class="num" id="kpi-project-count">1,516</span>
+        <span class="label">관련사업</span>
       </div>
     </div>
+  </header>
 
-    <div class="scene-wrap" id="sceneWrap">
-      <canvas id="webgl"></canvas>
-      <div id="labels"></div>
-      <div id="tooltip" class="tooltip"></div>
-    </div>
-
-    <aside id="detailPanel" class="panel" aria-live="polite">
-      <div class="panel-shell">
-        <div class="panel-head">
-          <div class="panel-title-block">
-            <div class="panel-kicker">Selection</div>
-            <h2 class="panel-title">세부 정보</h2>
-            <div class="panel-subtitle">클릭하여 정보 보기</div>
-          </div>
-          <button id="closePanelBtn" class="close-btn" type="button" aria-label="닫기">×</button>
-        </div>
-        <div class="panel-body" id="panelBody">
-          <div class="empty">블록을 클릭해 정보를 확인하세요.</div>
-        </div>
+  <main class="page">
+    <section class="map-card">
+      <div class="map-wrap" id="mapWrap">
+        <svg id="strategicMap" aria-label="국가전략기술 3D 맵"></svg>
       </div>
-    </aside>
-  </div>
-
-  <script type="module">
-    import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.162.0/build/three.module.js';
-    import { OrbitControls } from 'https://cdn.jsdelivr.net/npm/three@0.162.0/examples/jsm/controls/OrbitControls.js';
-    import { CSS2DRenderer, CSS2DObject } from 'https://cdn.jsdelivr.net/npm/three@0.162.0/examples/jsm/renderers/CSS2DRenderer.js';
-    import { RoundedBoxGeometry } from 'https://cdn.jsdelivr.net/npm/three@0.162.0/examples/jsm/geometries/RoundedBoxGeometry.js';
-
-    const DATA = window.STRATEGIC_MAP_DATA || window.STRATEGIC_TECH_DATA;
-    if (!DATA || !DATA.sectors) {
-      throw new Error('data.js 로딩에 실패했습니다.');
-    }
-
-    const app = document.getElementById('app');
-    const sceneWrap = document.getElementById('sceneWrap');
-    const canvas = document.getElementById('webgl');
-    const tooltip = document.getElementById('tooltip');
-    const panel = document.getElementById('detailPanel');
-    const panelBody = document.getElementById('panelBody');
-    const closePanelBtn = document.getElementById('closePanelBtn');
-    const resetCameraBtn = document.getElementById('resetCameraBtn');
-    const topBudget26 = document.getElementById('topBudget26');
-    const topBudget25 = document.getElementById('topBudget25');
-    const topCounts = document.getElementById('topCounts');
-    const topGrowth = document.getElementById('topGrowth');
-
-    topBudget26.textContent = `${DATA.meta.totalBudgetTrillion2026.toFixed(2)}조원`;
-    topBudget25.textContent = `${DATA.meta.totalBudgetTrillion2025.toFixed(2)}조원`;
-    topCounts.textContent = `${DATA.meta.sectorCount} / ${DATA.meta.detailTechCount}`;
-    topGrowth.textContent = `증가율 ${formatPercent(DATA.meta.budgetGrowthPct)}`;
-
-    const renderer = new THREE.WebGLRenderer({ canvas, antialias:true, alpha:true });
-    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-    renderer.setSize(sceneWrap.clientWidth, sceneWrap.clientHeight);
-    renderer.outputColorSpace = THREE.SRGBColorSpace;
-    renderer.shadowMap.enabled = true;
-    renderer.shadowMap.type = THREE.PCFSoftShadowMap;
-    renderer.toneMapping = THREE.ACESFilmicToneMapping;
-    renderer.toneMappingExposure = 1.05;
-
-    const labelRenderer = new CSS2DRenderer();
-    labelRenderer.setSize(sceneWrap.clientWidth, sceneWrap.clientHeight);
-    labelRenderer.domElement.id = 'labelsRenderer';
-    labelRenderer.domElement.style.position = 'absolute';
-    labelRenderer.domElement.style.inset = '0';
-    labelRenderer.domElement.style.pointerEvents = 'none';
-    document.getElementById('labels').appendChild(labelRenderer.domElement);
-
-    const scene = new THREE.Scene();
-    scene.fog = new THREE.FogExp2(0x08101d, 0.0022);
-
-    const camera = new THREE.PerspectiveCamera(44, sceneWrap.clientWidth / sceneWrap.clientHeight, 0.1, 1200);
-    const DEFAULT_CAMERA_POS = new THREE.Vector3(0, 155, 195);
-    const DEFAULT_TARGET = new THREE.Vector3(0, 18, 0);
-    camera.position.copy(DEFAULT_CAMERA_POS);
-
-    const controls = new OrbitControls(camera, renderer.domElement);
-    controls.enableDamping = true;
-    controls.dampingFactor = 0.065;
-    controls.screenSpacePanning = false;
-    controls.minDistance = 110;
-    controls.maxDistance = 360;
-    controls.minPolarAngle = 0.34;
-    controls.maxPolarAngle = 1.42;
-    controls.target.copy(DEFAULT_TARGET);
-
-    const ambient = new THREE.AmbientLight(0xd8e8ff, 0.88);
-    scene.add(ambient);
-
-    const hemi = new THREE.HemisphereLight(0xbfe2ff, 0x07101d, 0.48);
-    scene.add(hemi);
-
-    const dir = new THREE.DirectionalLight(0xffffff, 1.65);
-    dir.position.set(120, 180, 90);
-    dir.castShadow = true;
-    dir.shadow.mapSize.set(2048, 2048);
-    dir.shadow.camera.near = 30;
-    dir.shadow.camera.far = 500;
-    dir.shadow.camera.left = -180;
-    dir.shadow.camera.right = 180;
-    dir.shadow.camera.top = 180;
-    dir.shadow.camera.bottom = -180;
-    dir.shadow.bias = -0.0002;
-    scene.add(dir);
-
-    const rim = new THREE.DirectionalLight(0x83b6ff, 0.48);
-    rim.position.set(-100, 75, -120);
-    scene.add(rim);
-
-    const floor = new THREE.Mesh(
-      new THREE.PlaneGeometry(520, 520),
-      new THREE.MeshStandardMaterial({ color:0x081323, roughness:0.94, metalness:0.08, transparent:true, opacity:0.98 })
-    );
-    floor.rotation.x = -Math.PI / 2;
-    floor.receiveShadow = true;
-    scene.add(floor);
-
-    const grid = new THREE.GridHelper(320, 28, 0x1b3556, 0x102039);
-    grid.material.transparent = true;
-    grid.material.opacity = 0.42;
-    grid.position.y = 0.08;
-    scene.add(grid);
-
-    const mapGroup = new THREE.Group();
-    scene.add(mapGroup);
-
-    const tray = createRoundedBox(186, 8, 120, 3.2, 0x09152a, 0x142746, 0x06101d);
-    tray.position.set(0, 4, 0);
-    tray.receiveShadow = true;
-    tray.castShadow = true;
-    mapGroup.add(tray.mesh);
-    mapGroup.add(tray.edges);
-
-    const glowTexture = createRadialTexture();
-    const glowMaterial = new THREE.SpriteMaterial({ map: glowTexture, color: 0x7fb3ff, transparent: true, opacity: 0.26, depthWrite:false });
-    const glowSprite = new THREE.Sprite(glowMaterial);
-    glowSprite.scale.set(230, 230, 1);
-    glowSprite.position.set(0, 10, 0);
-    mapGroup.add(glowSprite);
-
-    const raycaster = new THREE.Raycaster();
-    const pointer = new THREE.Vector2();
-    const interactive = [];
-    const sectorMeshes = new Map();
-    const techMeshes = new Map();
-
-    let hoverRef = null;
-    let selection = null;
-
-    buildMap();
-
-    closePanelBtn.addEventListener('click', () => {
-      selection = null;
-      updateSelectionVisuals();
-      closePanel();
-    });
-
-    resetCameraBtn.addEventListener('click', () => {
-      camera.position.copy(DEFAULT_CAMERA_POS);
-      controls.target.copy(DEFAULT_TARGET);
-      controls.update();
-    });
-
-    renderer.domElement.addEventListener('mousemove', onPointerMove);
-    renderer.domElement.addEventListener('mouseleave', () => {
-      hoverRef = null;
-      tooltip.classList.remove('visible');
-      updateSelectionVisuals();
-      renderer.domElement.style.cursor = 'default';
-    });
-    renderer.domElement.addEventListener('click', onPointerClick);
-
-    panelBody.addEventListener('click', (event) => {
-      const techButton = event.target.closest('[data-tech-button]');
-      if (techButton) {
-        const sectorId = Number(techButton.dataset.sectorId);
-        const techName = techButton.dataset.techName;
-        selectTech(sectorId, techName);
-      }
-    });
-
-    window.addEventListener('resize', onResize);
-
-    const clock = new THREE.Clock();
-    animate();
-
-    function buildMap(){
-      const boardW = 176;
-      const boardD = 110;
-      const sectorRects = treemapLayout(
-        DATA.sectors.map(sector => ({
-          key: String(sector.id),
-          value: Math.max(sector.budgetTrillion2026, 0.001),
-          data: sector
-        })),
-        -boardW / 2,
-        -boardD / 2,
-        boardW,
-        boardD,
-        0,
-      );
-
-      sectorRects.forEach((rect) => {
-        const sector = rect.data;
-        const gap = 2.4;
-        const padRect = insetRect(rect, gap);
-        const foundationHeight = 4.2;
-        const sectorHeight = 12 + (sector.techLevelPct * 0.28);
-        const sectorColor = new THREE.Color(sector.color);
-
-        const foundation = createRoundedBox(
-          padRect.w,
-          foundationHeight,
-          padRect.d,
-          Math.min(2.4, Math.min(padRect.w, padRect.d) * 0.08),
-          0x0a1528,
-          0x20375d,
-          0x06101d
-        );
-        foundation.mesh.position.set(padRect.cx, 6 + foundationHeight / 2, padRect.cz);
-        foundation.mesh.receiveShadow = true;
-        foundation.mesh.castShadow = true;
-        foundation.mesh.userData = { type:'sector', sectorId:sector.id, name:sector.name, techName:null };
-        foundation.edges.userData = foundation.mesh.userData;
-        mapGroup.add(foundation.mesh, foundation.edges);
-
-        const slab = createRoundedBox(
-          Math.max(6, padRect.w - 0.45),
-          sectorHeight,
-          Math.max(6, padRect.d - 0.45),
-          Math.min(2.6, Math.min(padRect.w, padRect.d) * 0.07),
-          adjustColor(sectorColor, 0, 0.0, 0.02),
-          adjustColor(sectorColor, 0, 0.02, -0.18),
-          adjustColor(sectorColor, 0, 0.0, -0.28)
-        );
-        slab.mesh.position.set(padRect.cx, 6 + foundationHeight + sectorHeight / 2, padRect.cz);
-        slab.mesh.receiveShadow = true;
-        slab.mesh.castShadow = true;
-        slab.mesh.userData = { type:'sector', sectorId:sector.id, name:sector.name, techName:null };
-        slab.edges.userData = slab.mesh.userData;
-        mapGroup.add(slab.mesh, slab.edges);
-
-        sectorMeshes.set(String(sector.id), {
-          data: sector,
-          foundation: foundation.mesh,
-          slab: slab.mesh,
-          edges: [foundation.edges, slab.edges],
-          labelEl: null,
-          towers: [],
-          rect: padRect,
-        });
-
-        interactive.push(slab.mesh);
-
-        const inner = insetRect(padRect, Math.max(2.0, Math.min(padRect.w, padRect.d) * 0.08));
-        const techRects = treemapLayout(
-          sector.detailTechs.map((tech, idx) => ({
-            key: `${sector.id}::${tech.name}`,
-            value: Math.max(tech.budgetMillion2026, 1),
-            data: { ...tech, _index: idx }
-          })),
-          inner.x,
-          inner.z,
-          inner.w,
-          inner.d,
-          1.4,
-        );
-
-        let maxTop = 0;
-
-        techRects.forEach((tRect) => {
-          const tech = tRect.data;
-          const towerHeight = 8 + (tech.techLevelPct * 0.52);
-          const toneShift = ((tech._index % 5) - 2) * 0.008;
-          const towerColor = adjustColor(sectorColor, toneShift, 0.05, 0.10 + ((tech._index % 3) * 0.02));
-
-          const tower = createRoundedBox(
-            Math.max(3.0, tRect.w),
-            towerHeight,
-            Math.max(3.0, tRect.d),
-            Math.min(1.15, Math.min(tRect.w, tRect.d) * 0.16),
-            towerColor,
-            adjustColor(towerColor, 0, 0.02, -0.18),
-            adjustColor(towerColor, 0, 0.0, -0.28)
-          );
-          const y = 6 + foundationHeight + sectorHeight + towerHeight / 2 + 0.34;
-          tower.mesh.position.set(tRect.cx, y, tRect.cz);
-          tower.mesh.castShadow = true;
-          tower.mesh.receiveShadow = true;
-          tower.mesh.userData = {
-            type:'tech',
-            sectorId:sector.id,
-            name:tech.name,
-            techName:tech.name
-          };
-          tower.edges.userData = tower.mesh.userData;
-          interactive.push(tower.mesh);
-          mapGroup.add(tower.mesh, tower.edges);
-
-          sectorMeshes.get(String(sector.id)).towers.push({ mesh:tower.mesh, edges:tower.edges, techName:tech.name });
-          techMeshes.set(`${sector.id}::${tech.name}`, {
-            sectorId: sector.id,
-            techName: tech.name,
-            mesh: tower.mesh,
-            edges: tower.edges,
-            rect: tRect,
-            height: towerHeight,
-          });
-
-          maxTop = Math.max(maxTop, y + towerHeight / 2);
-        });
-
-        const labelEl = document.createElement('div');
-        labelEl.className = 'sector-label';
-        labelEl.innerHTML = `<span>${escapeHtml(sector.name)}</span><span class="label-budget">${formatBudgetTrillion(sector.budgetTrillion2026)}</span>`;
-        const labelObj = new CSS2DObject(labelEl);
-        labelObj.position.set(padRect.cx, maxTop + 5.6, padRect.cz);
-        mapGroup.add(labelObj);
-        sectorMeshes.get(String(sector.id)).labelEl = labelEl;
-      });
-    }
-
-    function createRoundedBox(width, height, depth, radius, topColor, sideColor, bottomColor){
-      const geometry = new RoundedBoxGeometry(width, height, depth, 5, Math.max(0.05, radius));
-      const mats = [
-        new THREE.MeshStandardMaterial({ color: sideColor, roughness: 0.56, metalness: 0.10 }),
-        new THREE.MeshStandardMaterial({ color: sideColor, roughness: 0.56, metalness: 0.10 }),
-        new THREE.MeshStandardMaterial({ color: topColor, roughness: 0.36, metalness: 0.14 }),
-        new THREE.MeshStandardMaterial({ color: bottomColor, roughness: 0.72, metalness: 0.06 }),
-        new THREE.MeshStandardMaterial({ color: sideColor, roughness: 0.56, metalness: 0.10 }),
-        new THREE.MeshStandardMaterial({ color: sideColor, roughness: 0.56, metalness: 0.10 }),
-      ];
-      mats.forEach((m) => {
-        m.emissive = new THREE.Color(0x000000);
-        m.emissiveIntensity = 0;
-      });
-      const mesh = new THREE.Mesh(geometry, mats);
-      const edgeGeo = new THREE.EdgesGeometry(geometry, 22);
-      const edgeMat = new THREE.LineBasicMaterial({ color: 0xe5f1ff, transparent: true, opacity: 0.18 });
-      const edges = new THREE.LineSegments(edgeGeo, edgeMat);
-      return { mesh, edges };
-    }
-
-    function createRadialTexture(){
-      const size = 256;
-      const c = document.createElement('canvas');
-      c.width = size;
-      c.height = size;
-      const ctx = c.getContext('2d');
-      const grad = ctx.createRadialGradient(size/2, size/2, 10, size/2, size/2, size/2);
-      grad.addColorStop(0, 'rgba(160, 210, 255, 0.55)');
-      grad.addColorStop(0.3, 'rgba(110, 160, 255, 0.25)');
-      grad.addColorStop(1, 'rgba(0,0,0,0)');
-      ctx.fillStyle = grad;
-      ctx.fillRect(0,0,size,size);
-      return new THREE.CanvasTexture(c);
-    }
-
-    function treemapLayout(items, x, z, w, d, padding = 0){
-      if (!items.length) return [];
-      const list = items.map(item => ({ ...item, value: Math.max(item.value || 0, 0.0001) }))
-                        .sort((a,b)=>b.value-a.value);
-      const out = [];
-      partition(list, x, z, w, d, out);
-      return out.map((rect) => insetRect(rect, padding));
-    }
-
-    function partition(items, x, z, w, d, out){
-      if (!items.length || w <= 0 || d <= 0) return;
-      if (items.length === 1){
-        out.push({
-          x, z, w, d,
-          cx: x + w / 2,
-          cz: z + d / 2,
-          key: items[0].key,
-          value: items[0].value,
-          data: items[0].data,
-        });
-        return;
-      }
-      const total = items.reduce((sum, item) => sum + item.value, 0);
-      let groupA = [];
-      let groupB = [];
-      let accum = 0;
-      items.forEach((item, idx) => {
-        if (accum < total / 2 || groupA.length === 0 || items.length - idx === 1 && groupB.length === 0) {
-          groupA.push(item);
-          accum += item.value;
-        } else {
-          groupB.push(item);
-        }
-      });
-      if (!groupA.length || !groupB.length){
-        groupA = items.slice(0, Math.ceil(items.length / 2));
-        groupB = items.slice(Math.ceil(items.length / 2));
-      }
-      const sumA = groupA.reduce((sum, item) => sum + item.value, 0);
-      const horizontal = w >= d;
-      if (horizontal){
-        const wA = w * (sumA / total);
-        partition(groupA, x, z, wA, d, out);
-        partition(groupB, x + wA, z, w - wA, d, out);
-      } else {
-        const dA = d * (sumA / total);
-        partition(groupA, x, z, w, dA, out);
-        partition(groupB, x, z + dA, w, d - dA, out);
-      }
-    }
-
-    function insetRect(rect, amount){
-      const inset = Math.min(amount, rect.w * 0.45, rect.d * 0.45);
-      const x = rect.x + inset;
-      const z = rect.z + inset;
-      const w = Math.max(1.6, rect.w - inset * 2);
-      const d = Math.max(1.6, rect.d - inset * 2);
-      return { ...rect, x, z, w, d, cx: x + w / 2, cz: z + d / 2 };
-    }
-
-    function adjustColor(colorInput, h = 0, s = 0, l = 0){
-      const color = colorInput instanceof THREE.Color ? colorInput.clone() : new THREE.Color(colorInput);
-      const hsl = { h:0, s:0, l:0 };
-      color.getHSL(hsl);
-      const c = new THREE.Color();
-      c.setHSL(
-        wrap01(hsl.h + h),
-        THREE.MathUtils.clamp(hsl.s + s, 0, 1),
-        THREE.MathUtils.clamp(hsl.l + l, 0, 1),
-      );
-      return c;
-    }
-
-    function wrap01(value){
-      let v = value;
-      while (v < 0) v += 1;
-      while (v > 1) v -= 1;
-      return v;
-    }
-
-    function onPointerMove(event){
-      const hit = raycast(event);
-      hoverRef = hit ? hit.object.userData : null;
-      updateSelectionVisuals();
-      if (hit){
-        renderer.domElement.style.cursor = 'pointer';
-        const point = clientPoint(event);
-        tooltip.style.left = `${Math.min(sceneWrap.clientWidth - 18, point.x + 18)}px`;
-        tooltip.style.top = `${Math.min(sceneWrap.clientHeight - 18, point.y + 18)}px`;
-        tooltip.innerHTML = buildTooltipHtml(hit.object.userData);
-        tooltip.classList.add('visible');
-      } else {
-        renderer.domElement.style.cursor = 'default';
-        tooltip.classList.remove('visible');
-      }
-    }
-
-    function onPointerClick(event){
-      const hit = raycast(event);
-      if (!hit){
-        return;
-      }
-      const meta = hit.object.userData;
-      if (meta.type === 'tech'){
-        selectTech(meta.sectorId, meta.techName);
-      } else if (meta.type === 'sector'){
-        selectSector(meta.sectorId);
-      }
-    }
-
-    function selectSector(sectorId){
-      selection = { type:'sector', sectorId:Number(sectorId), techName:null };
-      updateSelectionVisuals();
-      renderPanel();
-      openPanel();
-    }
-
-    function selectTech(sectorId, techName){
-      selection = { type:'tech', sectorId:Number(sectorId), techName:String(techName) };
-      updateSelectionVisuals();
-      renderPanel();
-      openPanel();
-    }
-
-    function getSector(sectorId){
-      return DATA.sectors.find(sector => Number(sector.id) === Number(sectorId));
-    }
-
-    function getTech(sector, techName){
-      return sector?.detailTechs?.find(tech => tech.name === techName);
-    }
-
-    function updateSelectionVisuals(){
-      sectorMeshes.forEach((entry, key) => {
-        const isSelectedSector = selection && Number(selection.sectorId) === Number(key);
-        const isHoverSector = hoverRef && hoverRef.type === 'sector' && Number(hoverRef.sectorId) === Number(key);
-        const hasSelectedTech = selection && selection.type === 'tech' && Number(selection.sectorId) === Number(key);
-        entry.labelEl?.classList.toggle('active', Boolean(isSelectedSector || hasSelectedTech || isHoverSector));
-
-        applyMeshState(entry.foundation, isSelectedSector || hasSelectedTech || isHoverSector, false);
-        applyMeshState(entry.slab, isSelectedSector || hasSelectedTech || isHoverSector, true);
-        entry.edges.forEach(edge => applyEdgeState(edge, isSelectedSector || hasSelectedTech || isHoverSector));
-      });
-
-      techMeshes.forEach((entry, techKey) => {
-        const isSelectedTech = selection && selection.type === 'tech' && techKey === `${selection.sectorId}::${selection.techName}`;
-        const isHoverTech = hoverRef && hoverRef.type === 'tech' && techKey === `${hoverRef.sectorId}::${hoverRef.techName}`;
-        applyMeshState(entry.mesh, isSelectedTech || isHoverTech, isSelectedTech);
-        applyEdgeState(entry.edges, isSelectedTech || isHoverTech, isSelectedTech);
-      });
-    }
-
-    function applyMeshState(mesh, active, strong = false){
-      if (!mesh) return;
-      const materials = Array.isArray(mesh.material) ? mesh.material : [mesh.material];
-      materials.forEach((material, idx) => {
-        if (!material) return;
-        if (!material.emissive) material.emissive = new THREE.Color(0x000000);
-        material.emissive.set(strong ? 0xf5fbff : 0xb3d6ff);
-        material.emissiveIntensity = strong ? 0.26 : active ? 0.12 : 0;
-      });
-    }
-
-    function applyEdgeState(edge, active, strong = false){
-      if (!edge || !edge.material) return;
-      edge.material.opacity = strong ? 0.95 : active ? 0.52 : 0.18;
-      edge.material.color.set(strong ? 0xffffff : 0xe4f1ff);
-    }
-
-    function raycast(event){
-      const rect = renderer.domElement.getBoundingClientRect();
-      pointer.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
-      pointer.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
-      raycaster.setFromCamera(pointer, camera);
-      const intersections = raycaster.intersectObjects(interactive, false);
-      return intersections[0] || null;
-    }
-
-    function buildTooltipHtml(meta){
-      const sector = getSector(meta.sectorId);
-      if (!sector) return '';
-      if (meta.type === 'tech'){
-        const tech = getTech(sector, meta.techName);
-        if (!tech) return '';
-        return `
-          <div class="tooltip-title">${escapeHtml(tech.name)}</div>
-          <div class="tooltip-sub">
-            ${escapeHtml(sector.name)}<br>
-            기술수준 ${formatPercent(tech.techLevelPct)} · 2026 ${formatBudgetMixed(tech.budgetMillion2026)}
-          </div>
-        `;
-      }
-      return `
-        <div class="tooltip-title">${escapeHtml(sector.name)}</div>
-        <div class="tooltip-sub">
-          기술수준 ${formatPercent(sector.techLevelPct)} · 2026 ${formatBudgetTrillion(sector.budgetTrillion2026)}
-        </div>
-      `;
-    }
-
-    function renderPanel(){
-      if (!selection) return;
-      const sector = getSector(selection.sectorId);
-      const tech = selection.type === 'tech' ? getTech(sector, selection.techName) : null;
-      if (!sector) return;
-
-      const sectorBudgetGrowth = calcGrowth(sector.budgetTrillion2026, sector.budgetTrillion2025);
-      const techBudgetGrowth = tech ? calcGrowth(tech.budgetMillion2026, tech.budgetMillion2025) : null;
-
-      const title = tech ? escapeHtml(tech.name) : escapeHtml(sector.name);
-      const kicker = tech ? '세부 중점기술' : '전략기술 분야';
-      const subtitle = tech
-        ? `${escapeHtml(sector.name)}`
-        : `세부 중점기술 ${sector.detailTechs.length}개`;
-
-      document.querySelector('.panel-kicker').textContent = kicker;
-      document.querySelector('.panel-title').innerHTML = title;
-      document.querySelector('.panel-subtitle').textContent = subtitle;
-
-      const heroMetrics = tech ? `
-        <div class="hero-metrics three">
-          ${metricCard('기술수준', formatPercent(tech.techLevelPct), `세부 중점기술`)}
-          ${metricCard('2026 예산', formatBudgetMixed(tech.budgetMillion2026), `${tech.projectCount.toLocaleString()}개 사업`)}
-          ${metricCard('2025 비교', formatBudgetMixed(tech.budgetMillion2025), `증감 ${techBudgetGrowth}`)}
-        </div>
-      ` : `
-        <div class="hero-metrics three">
-          ${metricCard('분야 기술수준', formatPercent(sector.techLevelPct), `${sector.detailTechs.length}개 세부 중점기술`)}
-          ${metricCard('2026 예산', formatBudgetTrillion(sector.budgetTrillion2026), `${sector.projectsCount.toLocaleString()}개 사업`)}
-          ${metricCard('2025 비교', formatBudgetTrillion(sector.budgetTrillion2025), `증감 ${sectorBudgetGrowth}`)}
-        </div>
-      `;
-
-      const compareRows = sector.detailTechs.map(detail => {
-        const isActive = tech ? detail.name === tech.name : false;
-        return `
-          <button class="tech-row ${isActive ? 'active' : ''}" type="button"
-                  data-tech-button="1"
-                  data-sector-id="${sector.id}"
-                  data-tech-name="${escapeAttr(detail.name)}">
-            <div class="tech-row-top">
-              <div class="tech-row-name">${escapeHtml(detail.name)}</div>
-              <div class="tech-row-level"><span>기술수준</span>${formatPercent(detail.techLevelPct)}</div>
-            </div>
-            <div class="level-track"><div class="level-fill" style="width:${Math.max(4, detail.techLevelPct)}%"></div></div>
-            <div class="tech-row-meta">
-              <span>2026 ${formatBudgetMixed(detail.budgetMillion2026)}</span>
-              <span>2025 ${formatBudgetMixed(detail.budgetMillion2025)}</span>
-            </div>
-          </button>
-        `;
-      }).join('');
-
-      const selectedDeptBudgets = tech ? tech.departmentBudgets : sector.departmentBudgetsTop;
-      const maxDeptBudget = Math.max(...(selectedDeptBudgets.map(item => item.budgetMillion2026).filter(Boolean)), 1);
-      const departmentRows = selectedDeptBudgets.length ? selectedDeptBudgets.map(item => `
-        <div class="dept-row">
-          <div class="dept-top">
-            <div class="dept-name">${escapeHtml(item.name)}</div>
-            <div class="mono">${formatBudgetMixed(item.budgetMillion2026)}</div>
-          </div>
-          <div class="dept-track"><div class="dept-fill" style="width:${Math.max(6, (item.budgetMillion2026 / maxDeptBudget) * 100)}%"></div></div>
-          <div class="dept-meta">
-            <span>2026 ${formatBudgetMixed(item.budgetMillion2026)}</span>
-            <span>2025 ${formatBudgetMixed(item.budgetMillion2025)}</span>
-          </div>
-        </div>
-      `).join('') : `<div class="empty">부처별 예산 정보가 없습니다.</div>`;
-
-      const projectSource = tech ? tech.projects : sector.projects;
-      const projectLimit = tech ? 30 : 24;
-      const shownProjects = projectSource.slice(0, projectLimit);
-      const projectRows = shownProjects.length ? shownProjects.map(project => renderProjectCard(project)).join('') : `<div class="empty">관련사업이 없습니다.</div>`;
-      const moreCount = projectSource.length > projectLimit ? projectSource.length - projectLimit : 0;
-
-      const sharedSection = tech && sector.sharedProjectsCount ? `
-        <div class="section">
-          <div class="section-header">
-            <div class="section-title">분야 공통 사업</div>
-            <div class="section-meta">${sector.sharedProjectsCount.toLocaleString()}개</div>
-          </div>
-          <div class="section-body">
-            <div class="project-list">
-              ${sector.sharedProjects.slice(0, 8).map(project => renderProjectCard(project)).join('')}
-            </div>
-          </div>
-        </div>
-      ` : '';
-
-      panelBody.innerHTML = `
-        ${heroMetrics}
-
-        <div class="section">
-          <div class="section-header">
-            <div class="section-title">세부 중점기술 · 기술수준</div>
-            <div class="section-meta">${sector.name}</div>
-          </div>
-          <div class="section-body">
-            <div class="tech-compare">${compareRows}</div>
-          </div>
-        </div>
-
-        <div class="section">
-          <div class="section-header">
-            <div class="section-title">부처별 예산</div>
-            <div class="section-meta">${escapeHtml(tech ? tech.name : sector.name)}</div>
-          </div>
-          <div class="section-body">
-            <div class="dept-list">${departmentRows}</div>
-          </div>
-        </div>
-
-        <div class="section">
-          <div class="section-header">
-            <div class="section-title">관련사업 목록</div>
-            <div class="section-meta">${projectSource.length.toLocaleString()}개 중 ${shownProjects.length.toLocaleString()}개 표시</div>
-          </div>
-          <div class="section-body">
-            <div class="project-list">${projectRows}</div>
-            ${moreCount > 0 ? `<div class="empty">외 ${moreCount.toLocaleString()}개 사업</div>` : ''}
-          </div>
-        </div>
-
-        ${sharedSection}
-      `;
-    }
-
-    function renderProjectCard(project){
-      const title = project.subproject && project.subproject !== project.program
-        ? project.subproject
-        : (project.program || project.subproject || '-');
-      const subline = project.subproject && project.subproject !== project.program ? project.program : '';
-      return `
-        <div class="project-card">
-          <div class="project-top">
-            <div class="project-title">${escapeHtml(title)}</div>
-            <div class="project-budget">
-              <div class="y26">2026 ${formatBudgetMixed(project.budgetMillion2026)}</div>
-              <div class="y25">2025 ${formatBudgetMixed(project.budgetMillion2025)}</div>
-            </div>
-          </div>
-          <div class="project-sub">
-            <span class="mini-pill">${escapeHtml(project.ministry || '-')}</span>
-            ${subline ? `<span>${escapeHtml(subline)}</span>` : ''}
-            ${project.start || project.end ? `<span>${escapeHtml(String(project.start || ''))}${project.end ? ` ~ ${escapeHtml(String(project.end))}` : ''}</span>` : ''}
-          </div>
-        </div>
-      `;
-    }
-
-    function metricCard(label, value, sub = ''){
-      return `
-        <div class="metric-card">
-          <span class="metric-label">${label}</span>
-          <span class="metric-value">${value}</span>
-          ${sub ? `<span class="metric-sub">${sub}</span>` : ''}
-        </div>
-      `;
-    }
-
-    function openPanel(){
-      panel.classList.add('open');
-    }
-
-    function closePanel(){
-      panel.classList.remove('open');
-      document.querySelector('.panel-kicker').textContent = 'Selection';
-      document.querySelector('.panel-title').textContent = '세부 정보';
-      document.querySelector('.panel-subtitle').textContent = '클릭하여 정보 보기';
-      panelBody.innerHTML = `<div class="empty">블록을 클릭해 정보를 확인하세요.</div>`;
-    }
-
-    function onResize(){
-      const width = sceneWrap.clientWidth;
-      const height = sceneWrap.clientHeight;
-      camera.aspect = width / height;
-      camera.updateProjectionMatrix();
-      renderer.setSize(width, height);
-      labelRenderer.setSize(width, height);
-    }
-
-    function animate(){
-      requestAnimationFrame(animate);
-      const elapsed = clock.getElapsedTime();
-      glowSprite.material.opacity = 0.20 + (Math.sin(elapsed * 0.65) * 0.03);
-      controls.update();
-      renderer.render(scene, camera);
-      labelRenderer.render(scene, camera);
-    }
-
-    function formatPercent(value){
-      if (!Number.isFinite(value)) return '-';
-      return `${Number(value).toFixed(1)}%`;
-    }
-
-    function formatBudgetTrillion(value){
-      if (!Number.isFinite(value)) return '-';
-      return `${Number(value).toFixed(value >= 1 ? 2 : 3)}조원`;
-    }
-
-    function formatBudgetMixed(million){
-      if (!Number.isFinite(million) || million === 0) return '-';
-      const eok = million / 100;
-      if (eok >= 10000) {
-        const jo = eok / 10000;
-        return `${jo.toFixed(jo >= 10 ? 1 : 2)}조원`;
-      }
-      if (eok >= 1000) return `${Math.round(eok).toLocaleString()}억원`;
-      if (eok >= 100) return `${Math.round(eok).toLocaleString()}억원`;
-      return `${eok.toFixed(1)}억원`;
-    }
-
-    function calcGrowth(v26, v25){
-      if (!Number.isFinite(v26) || !Number.isFinite(v25) || v25 === 0) {
-        return v26 > 0 ? '신규' : '-';
-      }
-      const pct = ((v26 / v25) - 1) * 100;
-      const sign = pct > 0 ? '+' : '';
-      return `${sign}${pct.toFixed(1)}%`;
-    }
-
-    function clientPoint(event){
-      const rect = sceneWrap.getBoundingClientRect();
-      return {
-        x: event.clientX - rect.left,
-        y: event.clientY - rect.top
-      };
-    }
-
-    function escapeHtml(value){
-      return String(value ?? '')
+      <button id="resetMapBtn" class="hud-reset" type="button">전체 보기</button>
+    </section>
+  </main>
+
+  <aside id="drawer" class="drawer" aria-hidden="true">
+    <div id="drawerRoot"></div>
+  </aside>
+  <div id="drawerBackdrop" class="backdrop"></div>
+
+  <script>
+    const DATA = window.STRATEGIC_TECH_DATA;
+    const state = {
+      selectedSectorId: null,
+      activeTab: 'techs',
+      projectQuery: ''
+    };
+
+    const mapWrap = document.getElementById('mapWrap');
+    const drawerEl = document.getElementById('drawer');
+    const drawerRoot = document.getElementById('drawerRoot');
+    const drawerBackdrop = document.getElementById('drawerBackdrop');
+    const resetMapBtn = document.getElementById('resetMapBtn');
+
+    const sectors = [...DATA.sectors].sort((a, b) => (b.displayBudgetTrillion2026 || 0) - (a.displayBudgetTrillion2026 || 0));
+    sectors.forEach((sector, index) => { sector.budgetRank = index + 1; });
+    const techLevels = sectors.map(s => Number(s.techLevelPct || 0));
+    const techMin = Math.min(...techLevels);
+    const techMax = Math.max(...techLevels);
+    const techRange = Math.max(techMax - techMin, 1);
+
+    function clamp(v, min, max) { return Math.max(min, Math.min(max, v)); }
+
+    function escapeHtml(str) {
+      return String(str ?? '')
         .replace(/&/g, '&amp;')
         .replace(/</g, '&lt;')
         .replace(/>/g, '&gt;')
@@ -1422,9 +694,496 @@
         .replace(/'/g, '&#39;');
     }
 
-    function escapeAttr(value){
-      return escapeHtml(value).replace(/"/g, '&quot;');
+    function formatInt(v) {
+      return Number(v || 0).toLocaleString('ko-KR');
     }
+
+    function formatPct(v) {
+      return `${Number(v || 0).toFixed(1)}%`;
+    }
+
+    function formatTrillion(v) {
+      return `${Number(v || 0).toFixed(2)}조원`;
+    }
+
+    function formatBudgetFromMillion(v) {
+      const n = Number(v || 0);
+      if (!n) return '0';
+      if (n >= 1000000) return `${(n / 1000000).toFixed(2)}조원`;
+      if (n >= 10000) return `${(n / 100).toLocaleString('ko-KR', { maximumFractionDigits: 0 })}억원`;
+      if (n >= 100) return `${(n / 100).toLocaleString('ko-KR', { maximumFractionDigits: 1 })}억원`;
+      return `${n.toLocaleString('ko-KR', { maximumFractionDigits: 1 })}백만원`;
+    }
+
+    function hexToRgb(hex) {
+      const clean = hex.replace('#', '');
+      const bigint = parseInt(clean, 16);
+      return {
+        r: (bigint >> 16) & 255,
+        g: (bigint >> 8) & 255,
+        b: bigint & 255
+      };
+    }
+
+    function rgbToHex({ r, g, b }) {
+      const toHex = (v) => clamp(Math.round(v), 0, 255).toString(16).padStart(2, '0');
+      return `#${toHex(r)}${toHex(g)}${toHex(b)}`;
+    }
+
+    function shade(hex, ratio) {
+      const rgb = hexToRgb(hex);
+      if (ratio >= 0) {
+        return rgbToHex({
+          r: rgb.r + (255 - rgb.r) * ratio,
+          g: rgb.g + (255 - rgb.g) * ratio,
+          b: rgb.b + (255 - rgb.b) * ratio
+        });
+      }
+      const p = Math.abs(ratio);
+      return rgbToHex({
+        r: rgb.r * (1 - p),
+        g: rgb.g * (1 - p),
+        b: rgb.b * (1 - p)
+      });
+    }
+
+    function textColorFor(hex) {
+      const { r, g, b } = hexToRgb(hex);
+      const luminance = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
+      return luminance > 0.72 ? '#0a1424' : '#ffffff';
+    }
+
+    function getSectorHeightPx(techLevel) {
+      const normalized = (Number(techLevel || 0) - techMin) / techRange;
+      return 96 + Math.pow(clamp(normalized, 0, 1), 1.08) * 340;
+    }
+
+    function splitBalanced(items) {
+      const total = items.reduce((sum, item) => sum + item.value, 0);
+      if (items.length <= 1) return [items, []];
+      let bestIndex = 1;
+      let acc = 0;
+      let bestDiff = Infinity;
+      for (let i = 1; i < items.length; i++) {
+        acc += items[i - 1].value;
+        const diff = Math.abs(total / 2 - acc);
+        if (diff < bestDiff) {
+          bestDiff = diff;
+          bestIndex = i;
+        }
+      }
+      return [items.slice(0, bestIndex), items.slice(bestIndex)];
+    }
+
+    function binaryTreemap(items, x, y, w, h, output = []) {
+      if (!items.length) return output;
+      if (items.length === 1) {
+        output.push({ item: items[0], x, y, w, h });
+        return output;
+      }
+      const total = items.reduce((sum, entry) => sum + entry.value, 0);
+      const [a, b] = splitBalanced(items);
+      const sumA = a.reduce((sum, entry) => sum + entry.value, 0);
+      if (w >= h) {
+        const wA = w * (sumA / total);
+        binaryTreemap(a, x, y, wA, h, output);
+        binaryTreemap(b, x + wA, y, w - wA, h, output);
+      } else {
+        const hA = h * (sumA / total);
+        binaryTreemap(a, x, y, w, hA, output);
+        binaryTreemap(b, x, y + hA, w, h - hA, output);
+      }
+      return output;
+    }
+
+    function buildMapLayout() {
+      const baseX = 300;
+      const baseY = 300;
+      const baseW = 1120;
+      const baseH = 660;
+      const padding = 18;
+
+      const items = sectors.map((sector) => ({
+        ...sector,
+        value: Math.max(Number(sector.displayBudgetTrillion2026 || sector.budgetTrillion2026 || 0), 0.02)
+      }));
+
+      const layout = binaryTreemap(items, baseX, baseY, baseW, baseH).map(({ item, x, y, w, h }) => {
+        const px = Math.min(padding, Math.min(w, h) * 0.12);
+        const rx = x + px / 2;
+        const ry = y + px / 2;
+        const rw = Math.max(56, w - px);
+        const rh = Math.max(56, h - px);
+        const elev = getSectorHeightPx(item.techLevelPct);
+        const dx = elev * 0.60;
+        const dy = elev * 0.43;
+        return {
+          sector: item,
+          x: rx,
+          y: ry,
+          w: rw,
+          h: rh,
+          elev,
+          dx,
+          dy
+        };
+      });
+
+      return {
+        viewBox: { width: 1700, height: 1160 },
+        layout
+      };
+    }
+
+    function labelFontSize(rect) {
+      return clamp(Math.min(rect.w * 0.135, rect.h * 0.18), 14, 26);
+    }
+
+    function buildTopLabel(rect, sector) {
+      const lines = Array.isArray(sector.labelLines) && sector.labelLines.length ? sector.labelLines : [sector.name];
+      const nameFont = labelFontSize(rect);
+      const metricFont = clamp(nameFont * 0.56, 11, 14);
+      const centerX = rect.x + rect.w / 2 - rect.dx;
+      const centerY = rect.y + rect.h / 2 - rect.dy;
+      const topText = [];
+      const maxNameLines = rect.h < 96 ? 1 : lines.length;
+      const useShort = rect.w < 120 || rect.h < 82;
+      const finalLines = useShort ? [sector.shortCode || sector.name] : lines.slice(0, maxNameLines);
+      const totalNameHeight = finalLines.length * nameFont * 1.08;
+      let startY = centerY - totalNameHeight / 2 + nameFont * 0.86;
+
+      finalLines.forEach((line, idx) => {
+        topText.push(`<tspan x="${centerX}" y="${startY + idx * nameFont * 1.08}">${escapeHtml(line)}</tspan>`);
+      });
+
+      if (rect.w >= 150 && rect.h >= 92) {
+        topText.push(
+          `<tspan class="sector-metric" x="${centerX}" y="${startY + finalLines.length * nameFont * 1.08 + metricFont * 1.35}">${formatTrillion(sector.displayBudgetTrillion2026)} · ${formatPct(sector.techLevelPct)}</tspan>`
+        );
+      } else if (rect.w >= 118 && rect.h >= 70) {
+        topText.push(
+          `<tspan class="sector-metric" x="${centerX}" y="${startY + finalLines.length * nameFont * 1.08 + metricFont * 1.2}">${formatPct(sector.techLevelPct)}</tspan>`
+        );
+      }
+
+      const rankX = rect.x + 14 - rect.dx;
+      const rankY = rect.y + 18 - rect.dy;
+
+      return `
+        <text class="sector-label" x="${centerX}" y="${centerY}" fill="${textColorFor(sector.color)}" style="font-size:${nameFont}px">
+          ${topText.join('')}
+        </text>
+        <text class="sector-rank" x="${rankX}" y="${rankY}" fill="${textColorFor(sector.color)}">#${String(sector.budgetRank || '').padStart(2, '0')}</text>
+      `;
+    }
+
+    function renderMap() {
+      const { viewBox, layout } = buildMapLayout();
+      const bgGrid = [];
+      for (let i = 0; i < 6; i++) {
+        const y = 940 + i * 26;
+        bgGrid.push(`<line x1="150" y1="${y}" x2="1520" y2="${y}" stroke="rgba(255,255,255,0.045)" stroke-width="1" />`);
+      }
+
+      const groups = layout.map((rect) => {
+        const s = rect.sector;
+        const topFill = shade(s.color, 0.02);
+        const frontFill = shade(s.color, -0.16);
+        const sideFill = shade(s.color, -0.28);
+        const top = [
+          [rect.x - rect.dx, rect.y - rect.dy],
+          [rect.x + rect.w - rect.dx, rect.y - rect.dy],
+          [rect.x + rect.w - rect.dx, rect.y + rect.h - rect.dy],
+          [rect.x - rect.dx, rect.y + rect.h - rect.dy]
+        ];
+        const front = [
+          [rect.x, rect.y + rect.h],
+          [rect.x + rect.w, rect.y + rect.h],
+          [rect.x + rect.w - rect.dx, rect.y + rect.h - rect.dy],
+          [rect.x - rect.dx, rect.y + rect.h - rect.dy]
+        ];
+        const side = [
+          [rect.x + rect.w, rect.y],
+          [rect.x + rect.w, rect.y + rect.h],
+          [rect.x + rect.w - rect.dx, rect.y + rect.h - rect.dy],
+          [rect.x + rect.w - rect.dx, rect.y - rect.dy]
+        ];
+        const cap = [
+          [rect.x + 10 - rect.dx, rect.y + 10 - rect.dy],
+          [rect.x + rect.w - 10 - rect.dx, rect.y + 10 - rect.dy],
+          [rect.x + rect.w - rect.dx, rect.y + 24 - rect.dy],
+          [rect.x - rect.dx, rect.y + 24 - rect.dy]
+        ];
+        const poly = (pts) => pts.map(p => p.join(',')).join(' ');
+        const selectedClass = state.selectedSectorId === s.id ? ' is-selected' : '';
+        return `
+          <g class="sector-group${selectedClass}" data-sector-id="${s.id}">
+            <polygon class="sector-front" points="${poly(front)}" fill="${frontFill}"></polygon>
+            <polygon class="sector-side" points="${poly(side)}" fill="${sideFill}"></polygon>
+            <polygon class="sector-top" points="${poly(top)}" fill="${topFill}"></polygon>
+            <polygon class="sector-cap" points="${poly(cap)}"></polygon>
+            <polygon class="sector-outline" points="${poly(top)}"></polygon>
+            ${buildTopLabel(rect, s)}
+          </g>
+        `;
+      }).join('');
+
+      const markup = `
+        <svg id="strategicMap" viewBox="0 0 ${viewBox.width} ${viewBox.height}" preserveAspectRatio="xMidYMid meet">
+          <defs>
+            <filter id="baseShadow" x="-40%" y="-40%" width="180%" height="180%">
+              <feDropShadow dx="0" dy="28" stdDeviation="24" flood-color="#03070f" flood-opacity="0.42"/>
+            </filter>
+            <filter id="hoverShadow" x="-40%" y="-40%" width="180%" height="180%">
+              <feDropShadow dx="0" dy="36" stdDeviation="28" flood-color="#000000" flood-opacity="0.52"/>
+            </filter>
+            <filter id="selectedShadow" x="-50%" y="-50%" width="200%" height="200%">
+              <feDropShadow dx="0" dy="40" stdDeviation="30" flood-color="#000000" flood-opacity="0.56"/>
+              <feDropShadow dx="0" dy="0" stdDeviation="10" flood-color="#ffffff" flood-opacity="0.28"/>
+            </filter>
+            <linearGradient id="floorGlow" x1="0" x2="0" y1="0" y2="1">
+              <stop offset="0%" stop-color="rgba(255,255,255,0.03)"/>
+              <stop offset="100%" stop-color="rgba(255,255,255,0.00)"/>
+            </linearGradient>
+          </defs>
+          <rect x="0" y="0" width="${viewBox.width}" height="${viewBox.height}" fill="transparent"></rect>
+          <ellipse cx="860" cy="980" rx="650" ry="84" fill="rgba(0,0,0,0.24)"></ellipse>
+          <g opacity="0.55">${bgGrid.join('')}</g>
+          <g filter="url(#baseShadow)">${groups}</g>
+        </svg>
+      `;
+      mapWrap.innerHTML = markup;
+      bindSectorEvents();
+    }
+
+    function getSelectedSector() {
+      return DATA.sectors.find(s => s.id === state.selectedSectorId) || null;
+    }
+
+    function renderMetricCard(label, value, sub = '') {
+      return `
+        <div class="metric-card">
+          <span class="k">${escapeHtml(label)}</span>
+          <div class="v">${value}</div>
+          ${sub ? `<div class="sub">${escapeHtml(sub)}</div>` : ''}
+        </div>
+      `;
+    }
+
+    function renderTechTab(sector) {
+      const techs = [...(sector.detailTechs || [])].sort((a, b) =>
+        (b.displayBudgetMillion2026 || 0) - (a.displayBudgetMillion2026 || 0) || (b.techLevelPct || 0) - (a.techLevelPct || 0)
+      );
+
+      if (!techs.length) {
+        return `<div class="empty">표시할 세부기술이 없습니다.</div>`;
+      }
+
+      return `
+        <div class="tech-grid">
+          ${techs.map(tech => {
+            const pills = [];
+            if (Number(tech.displayBudgetMillion2026 || 0) > 0) pills.push(`<span class="pill">예산 ${formatBudgetFromMillion(tech.displayBudgetMillion2026)}</span>`);
+            pills.push(`<span class="pill">기술수준 ${formatPct(tech.techLevelPct)}</span>`);
+            if (Number(tech.projectCount || 0) > 0) pills.push(`<span class="pill">사업 ${formatInt(tech.projectCount)}개</span>`);
+            const fill = shade(sector.color, -0.12);
+            return `
+              <div class="tech-card">
+                <div class="tech-title">${escapeHtml(tech.name)}</div>
+                <div class="tech-meta">${pills.join('')}</div>
+                <div class="tech-level-bar"><div class="tech-level-fill" style="width:${clamp(Number(tech.techLevelPct || 0), 0, 100)}%; background:${fill};"></div></div>
+              </div>
+            `;
+          }).join('')}
+        </div>
+      `;
+    }
+
+    function normalizeText(text) {
+      return String(text || '').toLowerCase().replace(/\s+/g, '');
+    }
+
+    function renderProjectTab(sector) {
+      const q = normalizeText(state.projectQuery);
+      const projects = [...(sector.projects || [])]
+        .sort((a, b) => (b.displayBudgetMillion2026 || 0) - (a.displayBudgetMillion2026 || 0))
+        .filter(p => {
+          if (!q) return true;
+          const blob = normalizeText([
+            p.program,
+            p.subproject,
+            p.ministry,
+            p.mappedDetailTech,
+            p.focusTech
+          ].join(' '));
+          return blob.includes(q);
+        });
+
+      return `
+        <div class="search-row">
+          <input id="projectSearchInput" class="search-input" type="text" placeholder="사업명 / 부처 검색" value="${escapeHtml(state.projectQuery)}" />
+          <div class="search-count">${formatInt(projects.length)}건</div>
+        </div>
+        <div class="project-list">
+          ${projects.length ? projects.map(project => {
+            const sub = [
+              project.ministry || null,
+              project.subproject || null,
+              (project.start || project.end) ? `${project.start || '—'}~${project.end || '계속'}` : null,
+              project.mappedDetailTech || null
+            ].filter(Boolean).join(' · ');
+            return `
+              <div class="project-card">
+                <div class="project-top">
+                  <div class="project-name">${escapeHtml(project.program || project.subproject || '사업명 없음')}</div>
+                  <div class="project-budget">${formatBudgetFromMillion(project.displayBudgetMillion2026)}</div>
+                </div>
+                ${sub ? `<div class="project-sub">${escapeHtml(sub)}</div>` : ''}
+              </div>
+            `;
+          }).join('') : `<div class="empty">검색 결과가 없습니다.</div>`}
+        </div>
+      `;
+    }
+
+    function renderMinistryTab(sector) {
+      const ministries = (sector.topMinistries || []).filter(m => Number(m.displayBudgetMillion2026 || 0) > 0);
+      if (!ministries.length) return `<div class="empty">표시할 부처 예산이 없습니다.</div>`;
+      const max = Math.max(...ministries.map(m => Number(m.displayBudgetMillion2026 || 0)));
+      return `
+        <div class="ministry-list">
+          ${ministries.map(m => {
+            const pct = max ? (Number(m.displayBudgetMillion2026 || 0) / max) * 100 : 0;
+            return `
+              <div class="ministry-row">
+                <div class="ministry-head">
+                  <span>${escapeHtml(m.name)}</span>
+                  <span>${formatBudgetFromMillion(m.displayBudgetMillion2026)}</span>
+                </div>
+                <div class="bar-track"><div class="bar-fill" style="width:${pct}%; background:${shade(sector.color, -0.18)};"></div></div>
+              </div>
+            `;
+          }).join('')}
+        </div>
+      `;
+    }
+
+    function renderDrawer() {
+      const sector = getSelectedSector();
+      if (!sector) {
+        drawerRoot.innerHTML = '';
+        drawerEl.classList.remove('open');
+        drawerEl.setAttribute('aria-hidden', 'true');
+        drawerBackdrop.classList.remove('show');
+        resetMapBtn.classList.remove('show');
+        return;
+      }
+
+      const tabButtons = [
+        ['techs', '세부기술'],
+        ['projects', '관련사업'],
+        ['ministries', '부처']
+      ].map(([id, label]) =>
+        `<button class="tab-btn ${state.activeTab === id ? 'active' : ''}" data-tab="${id}" type="button">${label}</button>`
+      ).join('');
+
+      const activePanel = state.activeTab === 'projects'
+        ? renderProjectTab(sector)
+        : state.activeTab === 'ministries'
+          ? renderMinistryTab(sector)
+          : renderTechTab(sector);
+
+      drawerRoot.innerHTML = `
+        <div class="drawer-header">
+          <div class="drawer-color" style="background:${sector.color}"></div>
+          <div style="min-width:0;">
+            <div class="drawer-eyebrow">${escapeHtml(sector.shortCode || '')}</div>
+            <h2 class="drawer-title">${escapeHtml(sector.name)}</h2>
+          </div>
+          <button class="drawer-close" id="drawerCloseBtn" type="button" aria-label="닫기">×</button>
+        </div>
+        <div class="drawer-body">
+          <div class="metric-grid">
+            ${renderMetricCard('2026 예산', formatTrillion(sector.displayBudgetTrillion2026), `전체의 ${sector.budgetSharePct.toFixed(1)}%`)}
+            ${renderMetricCard('기술도달수준', formatPct(sector.techLevelPct), `높이 기준`)}
+            ${renderMetricCard('세부기술', `${formatInt(sector.detailTechCount)}개`, '')}
+            ${renderMetricCard('관련사업', `${formatInt(sector.projectsCount)}개`, '')}
+          </div>
+          <div class="tabs">${tabButtons}</div>
+          <div class="tab-panel active">${activePanel}</div>
+        </div>
+      `;
+
+      drawerEl.classList.add('open');
+      drawerEl.setAttribute('aria-hidden', 'false');
+      drawerBackdrop.classList.add('show');
+      resetMapBtn.classList.add('show');
+
+      const closeBtn = document.getElementById('drawerCloseBtn');
+      if (closeBtn) closeBtn.addEventListener('click', clearSelection);
+
+      drawerRoot.querySelectorAll('.tab-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+          state.activeTab = btn.dataset.tab;
+          if (state.activeTab !== 'projects') state.projectQuery = '';
+          renderDrawer();
+        });
+      });
+
+      const searchInput = document.getElementById('projectSearchInput');
+      if (searchInput) {
+        searchInput.addEventListener('input', (e) => {
+          state.projectQuery = e.target.value || '';
+          renderDrawer();
+          const nextInput = document.getElementById('projectSearchInput');
+          if (nextInput) {
+            nextInput.focus();
+            nextInput.setSelectionRange(state.projectQuery.length, state.projectQuery.length);
+          }
+        });
+      }
+    }
+
+    function setSelectedSector(id) {
+      state.selectedSectorId = id;
+      state.activeTab = 'techs';
+      state.projectQuery = '';
+      renderMap();
+      renderDrawer();
+    }
+
+    function clearSelection() {
+      state.selectedSectorId = null;
+      state.projectQuery = '';
+      renderMap();
+      renderDrawer();
+    }
+
+    function bindSectorEvents() {
+      document.querySelectorAll('.sector-group').forEach(group => {
+        group.addEventListener('click', () => {
+          const id = Number(group.getAttribute('data-sector-id'));
+          setSelectedSector(id);
+        });
+      });
+    }
+
+    function mountTopStats() {
+      document.getElementById('kpi-total-budget').textContent = Number(DATA.meta.totalBudgetTrillion2026 || 0).toFixed(2);
+      document.getElementById('kpi-sector-count').textContent = formatInt(DATA.meta.sectorCount || DATA.sectors.length);
+      document.getElementById('kpi-detail-count').textContent = formatInt(DATA.meta.detailTechCount || 0);
+      document.getElementById('kpi-project-count').textContent = formatInt(DATA.meta.totalProjects || 0);
+    }
+
+    drawerBackdrop.addEventListener('click', clearSelection);
+    resetMapBtn.addEventListener('click', clearSelection);
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') clearSelection();
+    });
+
+    mountTopStats();
+    renderMap();
+    renderDrawer();
   </script>
 </body>
 </html>
